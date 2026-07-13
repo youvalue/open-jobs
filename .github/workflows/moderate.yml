@@ -1,0 +1,61 @@
+name: Content Moderation
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  issues: write
+
+jobs:
+  moderate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const text = (issue.title + ' ' + (issue.body || '')).toLowerCase();
+            const labels = issue.labels.map(l => l.name);
+            if (labels.includes('reviewed') || labels.includes('spam')) return;
+
+            // ponytail: regex-based spam detection, no external API for MVP
+            const spamPatterns = [
+              /(?:buy|sell|cheap|discount|price|offer|limited|act now|click here)\s*(?:now|today)?/i,
+              /(?:https?:\/\/[^\s]+){3,}/,
+              /(?:[\w.-]+@[\w.-]+\.\w+){3,}/,
+              /(?:casino|gambling|crypto\s*bonus|free\s*money|earn\s*\$)/i,
+              /(?:viagra|cialis|weight\s*loss|enlargement)/i,
+            ]
+
+            let spamScore = 0;
+            for (const pattern of spamPatterns) {
+              if (pattern.test(text)) spamScore++;
+            }
+
+            if (spamScore >= 2) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: ['spam']
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                state: 'closed'
+              });
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: 'This post has been automatically closed due to spam detection.'
+              });
+            } else {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: ['reviewed']
+              });
+            }

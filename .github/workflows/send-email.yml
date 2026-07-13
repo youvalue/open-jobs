@@ -1,0 +1,52 @@
+name: Send Email
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  issues: write
+
+jobs:
+  send-email:
+    if: github.event.label.name == 'action/send-email'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const body = issue.body || '';
+            const targetMatch = body.match(/\*\*Target Issue:\*\*\s*#(\d+)/);
+            const fromMatch = body.match(/\*\*From:\*\*\s*([^\n]+)/);
+            const targetIssueNumber = targetMatch ? targetMatch[1] : null;
+            const fromName = fromMatch ? fromMatch[1].trim() : 'Unknown';
+
+            // Get the target issue to find the email
+            if (targetIssueNumber) {
+              const { data: targetIssue } = await github.rest.issues.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: parseInt(targetIssueNumber)
+              });
+              const emailMatch = targetIssue.body.match(/\*\*.*?Email.*?\*\*:\s*([^\n]+)/);
+              const targetEmail = emailMatch ? emailMatch[1].trim() : null;
+
+              if (targetEmail) {
+                // ponytail: log the email that would be sent. Replace with actual email API call when EMAIL_API_KEY is configured.
+                console.log(`Would send email to ${targetEmail} from ${fromName}: ${body}`);
+              }
+            }
+
+            // Clean up the action issue
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed'
+            });
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: 'Email action processed.'
+            });

@@ -1,0 +1,651 @@
+/* ponytail: single-file SPA, no framework, no build step */
+
+const CONFIG = {
+  owner: 'youvalue',
+  repo: 'open-jobs',
+  clientId: 'YOUR_GITHUB_CLIENT_ID',
+  scope: 'public_repo',
+  apiBase: 'https://api.github.com',
+}
+
+let state = {
+  user: null,
+  token: null,
+  lang: 'en',
+  country: '',
+  city: '',
+  role: '',
+  type: 'resume',
+  issues: [],
+  page: 1,
+  loading: false,
+}
+
+let locales = {}
+let countryLang = {}
+let roles = []
+let cities = {}
+
+async function loadConfig() {
+  const [cl, r, cn, us] = await Promise.all([
+    fetch('config/country-language.json').then(r => r.json()),
+    fetch('config/roles.json').then(r => r.json()),
+    fetch('config/cities/CN.json').then(r => r.json()),
+    fetch('config/cities/US.json').then(r => r.json()),
+  ])
+  countryLang = cl; roles = r; cities = { CN: cn, US: us }
+}
+
+async function loadLocale(lang) {
+  try {
+    const res = await fetch(`locales/${lang}.json`)
+    locales[lang] = await res.json()
+  } catch { locales[lang] = {} }
+}
+
+function t(key) {
+  const keys = key.split('.')
+  let val = locales[state.lang]
+  for (const k of keys) { if (val) val = val[k] }
+  return val || key
+}
+
+function qs(sel) { return document.querySelector(sel) }
+function qsa(sel) { return document.querySelectorAll(sel) }
+function el(tag, attrs = {}, ...children) {
+  const e = document.createElement(tag)
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'className') e.className = v
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v)
+    else if (k === 'dataset') Object.assign(e.dataset, v)
+    else e.setAttribute(k, v)
+  }
+  for (const c of children) { if (c != null) e.append(typeof c === 'string' ? document.createTextNode(c) : c) }
+  return e
+}
+
+function showLoading(show) { qs('#loading').style.display = show ? 'block' : 'none' }
+function showContent(html) { qs('#content').innerHTML = html }
+
+function openModal(html) {
+  qs('#modal').innerHTML = html
+  qs('#modal-overlay').classList.remove('hidden')
+}
+function closeModal() { qs('#modal-overlay').classList.add('hidden') }
+qs('#modal-overlay').addEventListener('click', e => { if (e.target === qs('#modal-overlay')) closeModal() })
+
+// --- i18n ---
+function applyI18n() {
+  for (const el of qsa('[data-i18n]')) {
+    const key = el.dataset.i18n
+    const val = t(key)
+    if (val !== key) el.textContent = val
+  }
+}
+
+// --- OAuth Device Flow ---
+const GH_AUTH = 'https://github.com/login/device'
+const GH_TOKEN = 'https://github.com/login/oauth/access_token'
+
+async function startDeviceFlow() {
+  const deviceRes = await fetch('https://github.com/login/device/code', {
+    method: 'POST',
+    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ client_id: CONFIG.clientId, scope: CONFIG.scope })
+  })
+  const device = await deviceRes.json()
+  if (device.error) { throw new Error(device.error_description) }
+
+  openModal(`
+    <div class="auth-box">
+      <h2>${t('auth.loginTitle')}</h2>
+      <p>${t('auth.enterCode')}</p>
+      <div class="auth-code">${device.user_code}</div>
+      <p><a href="${device.verification_uri}" target="_blank">${device.verification_uri}</a></p>
+      <p style="margin-top:12px;font-size:13px;color:var(--text-secondary)">${t('auth.waiting')}</p>
+    </div>
+  `)
+
+  return new Promise((resolve, reject) => {
+    const poll = setInterval(async () => {
+      try {
+        const res = await fetch('https://github.com/login/oauth/access_token', {
+          method: 'POST',
+          headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_id: CONFIG.clientId,
+            device_code: device.device_code,
+            grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
+          })
+        })
+        const data = await res.json()
+        if (data.access_token) {
+          clearInterval(poll)
+          closeModal()
+          state.token = data.access_token
+          localStorage.setItem('gh_token', data.access_token)
+          await fetchUser()
+          renderAuth()
+          router()
+        } else if (data.error === 'authorization_pending') {
+          // still waiting
+        } else if (data.error === 'slow_down') {
+          // ignore, just keep polling
+        } else {
+          clearInterval(poll)
+          closeModal()
+          throw new Error(data.error_description || data.error)
+        }
+      } catch (e) {
+        clearInterval(poll)
+        closeModal()
+        console.error('OAuth error:', e)
+      }
+    }, 5000)
+  })
+}
+
+async function fetchUser() {
+  if (!state.token) return
+  try {
+    const res = await fetch('https://api.github.com/user', {
+      headers: { 'Authorization': `Bearer ${state.token}`, 'Accept': 'application/vnd.github.v3+json' }
+    })
+    state.user = await res.json()
+  } catch { state.user = null }
+}
+
+function renderAuth() {
+  const area = qs('#auth-area')
+  if (state.user) {
+    area.innerHTML = `
+      <img src="${state.user.avatar_url}" class="avatar" alt="">
+      <span style="font-size:13px">${state.user.login}</span>
+      <button class="btn btn-sm" onclick="logout()">${t('nav.logout')}</button>
+    `
+  } else {
+    area.innerHTML = `<button class="btn btn-sm btn-primary" onclick="startDeviceFlow()">${t('nav.login')}</button>`
+  }
+}
+
+function logout() {
+  state.token = null; state.user = null
+  localStorage.removeItem('gh_token')
+  renderAuth(); router()
+}
+
+// --- GitHub API ---
+async function gh(path, opts = {}) {
+  const headers = { 'Accept': 'application/vnd.github.v3+json' }
+  if (state.token) headers['Authorization'] = `Bearer ${state.token}`
+  if (opts.body) headers['Content-Type'] = 'application/json'
+  const res = await fetch(`${CONFIG.apiBase}${path}`, { ...opts, headers })
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || res.statusText) }
+  return res.json()
+}
+
+async function listIssues(labels, page = 1, perPage = 30) {
+  const params = new URLSearchParams({ state: 'open', per_page: perPage, page })
+  if (labels) params.set('labels', labels)
+  return gh(`/repos/${CONFIG.owner}/${CONFIG.repo}/issues?${params}`)
+}
+
+async function getIssue(number) {
+  return gh(`/repos/${CONFIG.owner}/${CONFIG.repo}/issues/${number}`)
+}
+
+async function createIssue(data) {
+  return gh(`/repos/${CONFIG.owner}/${CONFIG.repo}/issues`, {
+    method: 'POST',
+    body: JSON.stringify(data)
+  })
+}
+
+async function updateIssue(number, data) {
+  return gh(`/repos/${CONFIG.owner}/${CONFIG.repo}/issues/${number}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data)
+  })
+}
+
+// --- Router ---
+function router() {
+  const hash = location.hash.slice(1) || '/resumes'
+  const parts = hash.split('/')
+  const route = parts[0]
+
+  // Update active tab
+  qsa('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === parts[0] || (parts[0] === '' && t.dataset.tab === 'resumes')))
+
+  showLoading(true)
+  if (route === '' || route === 'resumes' || route === 'jobs') {
+    state.type = route === 'jobs' ? 'job' : 'resume'
+    renderList()
+  } else if (route === 'new') {
+    renderPostForm()
+  } else if (route === 'my') {
+    renderMyPosts()
+  } else if (route === 'issue') {
+    renderDetail(parts[1])
+  } else {
+    showContent(`<p>404</p>`)
+    showLoading(false)
+  }
+}
+
+// --- List View ---
+async function renderList() {
+  showLoading(true)
+  const labels = [`type-${state.type}`]
+  if (state.country) labels.push(`country-${state.country}`)
+  if (state.city) labels.push(`city-${state.city}`)
+  if (state.role) labels.push(`role-${state.role}`)
+
+  try {
+    const issues = await listIssues(labels.join(','))
+    state.issues = issues
+    const countries = Object.keys(countryLang)
+    const citiesList = state.country ? (cities[state.country] || []) : []
+
+    let html = `
+      <div class="filters">
+        <div class="filter-group">
+          <label>${t('filter.country')}</label>
+          <select id="filter-country" onchange="onFilterChange()">
+            <option value="">${t('filter.all')}</option>
+            ${countries.map(c => `<option value="${c}" ${c === state.country ? 'selected' : ''}>${c}</option>`).join('')}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>${t('filter.city')}</label>
+          <select id="filter-city" onchange="onFilterChange()">
+            <option value="">${t('filter.all')}</option>
+            ${citiesList.map(c => `<option value="${c}" ${c === state.city ? 'selected' : ''}>${c}</option>`).join('')}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>${t('filter.role')}</label>
+          <select id="filter-role" onchange="onFilterChange()">
+            <option value="">${t('filter.all')}</option>
+            ${roles.map(r => `<option value="${r}" ${r === state.role ? 'selected' : ''}>${r}</option>`).join('')}
+          </select>
+        </div>
+        <div class="filter-actions">
+          <button class="btn btn-sm" onclick="clearFilters()">${t('filter.clear')}</button>
+          <a href="#/new?type=${state.type}" class="btn btn-sm btn-primary">${t('nav.new')}</a>
+        </div>
+      </div>
+      <div class="issue-list">
+    `
+    if (issues.length === 0) {
+      html += `<p style="text-align:center;padding:48px;color:var(--text-secondary)">${t('common.noResults')}</p>`
+    } else {
+      for (const issue of issues) {
+        const labels = issue.labels.map(l => l.name || l)
+        const cityTag = labels.find(l => l.startsWith('city-'))
+        const roleTags = labels.filter(l => l.startsWith('role-'))
+        const summary = (issue.body || '').slice(0, 150)
+        html += `
+          <div class="issue-card" onclick="location.hash='#/issue/${issue.number}'">
+            <h3>${escapeHtml(issue.title)}</h3>
+            <div class="meta">
+              <span>#${issue.number}</span>
+              <span>${t('common.postedBy')} ${issue.user.login}</span>
+              <span>${t('common.updated')} ${formatDate(issue.updated_at)}</span>
+            </div>
+            <div class="tags">
+              ${labels.filter(l => !l.startsWith('type-')).map(l => `<span class="tag ${l.replace(/[^a-z0-9-]/g, '')}">${l}</span>`).join('')}
+            </div>
+            ${summary ? `<div class="summary">${escapeHtml(summary)}${summary.length >= 150 ? '...' : ''}</div>` : ''}
+          </div>
+        `
+      }
+    }
+    html += '</div>'
+    showContent(html)
+  } catch (e) {
+    showContent(`<p style="text-align:center;padding:48px;color:var(--danger)">${t('common.error')}: ${e.message}</p>`)
+  }
+  showLoading(false)
+}
+
+function onFilterChange() {
+  state.country = qs('#filter-country').value
+  state.city = qs('#filter-city').value
+  state.role = qs('#filter-role').value
+  router()
+}
+
+function clearFilters() {
+  state.country = ''; state.city = ''; state.role = ''
+  router()
+}
+
+// --- Post Form ---
+async function renderPostForm() {
+  showLoading(true)
+  const params = new URLSearchParams(location.hash.split('?')[1] || '')
+  const presetType = params.get('type') || state.type
+  const countries = Object.keys(countryLang)
+  const citiesList = state.country ? (cities[state.country] || []) : []
+
+  const html = `
+    <div class="form">
+      <h2>${t('post.title')}</h2>
+      <div class="form-group">
+        <label>${t('post.type')}</label>
+        <select id="post-type">
+          <option value="resume" ${presetType === 'resume' ? 'selected' : ''}>${t('post.resume')}</option>
+          <option value="job" ${presetType === 'job' ? 'selected' : ''}>${t('post.job')}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>${t('post.country')}</label>
+        <select id="post-country" onchange="onPostCountryChange()">
+          <option value="">${t('common.pleaseSelect')}</option>
+          ${countries.map(c => `<option value="${c}">${c}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>${t('post.city')}</label>
+        <select id="post-city">
+          <option value="">${t('common.pleaseSelect')}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>${t('post.role')}</label>
+        <select id="post-role">
+          <option value="">${t('common.pleaseSelect')}</option>
+          ${roles.map(r => `<option value="${r}">${r}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>${t('post.titleLabel')}</label>
+        <input id="post-title" type="text" placeholder="e.g. Senior Frontend Developer looking for opportunities">
+      </div>
+      <div class="form-group">
+        <label>${t('post.description')}</label>
+        <textarea id="post-body" placeholder="${t('post.placeholder')}"></textarea>
+        <div class="form-hint">${t('common.markdown')}</div>
+      </div>
+      <div class="form-group">
+        <label>${t('post.email')}</label>
+        <input id="post-email" type="email" placeholder="${t('post.emailPlaceholder')}">
+        <div class="form-hint" style="color:var(--danger)">${t('common.emailPublic')}</div>
+      </div>
+      <div class="form-actions">
+        <button class="btn" onclick="history.back()">${t('common.cancel')}</button>
+        <button class="btn btn-primary" onclick="submitPost()">${t('post.submit')}</button>
+      </div>
+    </div>
+  `
+  showContent(html)
+  showLoading(false)
+}
+
+function onPostCountryChange() {
+  const country = qs('#post-country').value
+  const citySelect = qs('#post-city')
+  const citiesList = cities[country] || []
+  citySelect.innerHTML = `<option value="">${t('common.pleaseSelect')}</option>` + citiesList.map(c => `<option value="${c}">${c}</option>`).join('')
+  // Auto-switch language based on country
+  if (countryLang[country]) {
+    state.lang = countryLang[country]
+    qs('#lang-select').value = state.lang
+    applyI18n()
+  }
+}
+
+async function submitPost() {
+  const type = qs('#post-type').value
+  const country = qs('#post-country').value
+  const city = qs('#post-city').value
+  const role = qs('#post-role').value
+  const title = qs('#post-title').value.trim()
+  const body = qs('#post-body').value.trim()
+  const email = qs('#post-email').value.trim()
+
+  if (!country || !city || !title || !body || !email) {
+    alert(t('common.error') + ': ' + t('common.pleaseSelect'))
+    return
+  }
+
+  const labels = [`type-${type}`, `country-${country}`, `city-${city}`, `status-open`]
+  if (role) labels.push(`role-${role}`)
+
+  const issueBody = `**${t('post.email')}:** ${email}\n\n---\n\n${body}`
+
+  try {
+    showLoading(true)
+    await createIssue({ title, body: issueBody, labels })
+    showContent(`<div style="text-align:center;padding:48px"><h2>${t('post.success')}</h2><p style="margin-top:12px"><a href="#/${type}s">← ${t('nav.resumes')}</a></p></div>`)
+  } catch (e) {
+    alert(`${t('common.error')}: ${e.message}`)
+  }
+  showLoading(false)
+}
+
+// --- My Posts ---
+async function renderMyPosts() {
+  if (!state.user) { showContent(`<div class="auth-box"><h2>${t('nav.login')}</h2><p>${t('auth.loginDesc')}</p><button class="btn btn-primary" onclick="startDeviceFlow()">${t('auth.loginButton')}</button></div>`); showLoading(false); return }
+
+  showLoading(true)
+  try {
+    const issues = await gh(`/repos/${CONFIG.owner}/${CONFIG.repo}/issues?state=all&per_page=100&creator=${state.user.login}`)
+    let html = `<h2 style="margin-bottom:16px">${t('my.title')}</h2>`
+    if (issues.length === 0) {
+      html += `<p style="text-align:center;padding:48px;color:var(--text-secondary)">${t('my.empty')}</p>`
+    } else {
+      html += `<div class="my-list">`
+      for (const issue of issues) {
+        const labels = issue.labels.map(l => l.name || l)
+        const isOpen = issue.state === 'open'
+        html += `
+          <div class="my-item">
+            <div class="info">
+              <h3><a href="#/issue/${issue.number}">${escapeHtml(issue.title)}</a></h3>
+              <div class="meta">#${issue.number} · ${isOpen ? t('status.open') : t('status.closed')} · ${formatDate(issue.updated_at)}</div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-sm" onclick="editMyIssue(${issue.number})">${t('my.edit')}</button>
+              <button class="btn btn-sm ${isOpen ? 'btn-danger' : ''}" onclick="toggleIssue(${issue.number}, ${!isOpen})">${isOpen ? t('my.close') : t('my.reopen')}</button>
+            </div>
+          </div>
+        `
+      }
+    }
+    showContent(html)
+  } catch (e) {
+    showContent(`<p style="text-align:center;padding:48px;color:var(--danger)">${t('common.error')}: ${e.message}</p>`)
+  }
+  showLoading(false)
+}
+
+async function editMyIssue(number) {
+  const issue = await getIssue(number)
+  const body = issue.body || ''
+  const emailMatch = body.match(/^\*\*.*?Email.*?\*\*:\s*([^\n]+)/m)
+  const existingEmail = emailMatch ? emailMatch[1].trim() : ''
+  const existingBody = emailMatch ? body.replace(/^\*\*.*?Email.*?\*\*:\s*[^\n]+\n\n---\n\n/, '') : body
+
+  openModal(`
+    <h2>${t('my.edit')} #${number}</h2>
+    <div class="form-group">
+      <label>${t('post.titleLabel')}</label>
+      <input id="edit-title" value="${escapeHtml(issue.title)}">
+    </div>
+    <div class="form-group">
+      <label>${t('post.email')}</label>
+      <input id="edit-email" value="${escapeHtml(existingEmail)}">
+    </div>
+    <div class="form-group">
+      <label>${t('post.description')}</label>
+      <textarea id="edit-body">${escapeHtml(existingBody)}</textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal()">${t('common.cancel')}</button>
+      <button class="btn btn-primary" onclick="saveEdit(${number})">${t('common.save')}</button>
+    </div>
+  `)
+}
+
+async function saveEdit(number) {
+  const title = qs('#edit-title').value.trim()
+  const email = qs('#edit-email').value.trim()
+  const body = qs('#edit-body').value.trim()
+  if (!title || !body) return
+  try {
+    showLoading(true)
+    await updateIssue(number, { title, body: `**${t('post.email')}:** ${email}\n\n---\n\n${body}` })
+    closeModal()
+    renderMyPosts()
+  } catch (e) { alert(`${t('common.error')}: ${e.message}`) }
+  showLoading(false)
+}
+
+async function toggleIssue(number, open) {
+  try {
+    showLoading(true)
+    await updateIssue(number, { state: open ? 'open' : 'closed' })
+    renderMyPosts()
+  } catch (e) { alert(`${t('common.error')}: ${e.message}`) }
+  showLoading(false)
+}
+
+// --- Detail View ---
+async function renderDetail(number) {
+  showLoading(true)
+  try {
+    const issue = await getIssue(number)
+    const labels = issue.labels.map(l => l.name || l)
+    const isResume = labels.includes('type-resume')
+    const html = `
+      <div class="detail">
+        <div class="tags">
+          ${labels.map(l => `<span class="tag ${l.replace(/[^a-z0-9-]/g, '')}">${l}</span>`).join('')}
+        </div>
+        <h2>${escapeHtml(issue.title)}</h2>
+        <div class="meta">
+          #${issue.number} · ${t('common.postedBy')} <a href="${issue.user.html_url}" target="_blank">${issue.user.login}</a>
+          · ${t('common.updated')} ${formatDate(issue.updated_at)}
+          · ${issue.state === 'open' ? t('status.open') : t('status.closed')}
+        </div>
+        <div class="body">${renderMarkdown(issue.body || '')}</div>
+        ${state.token ? `<div style="margin-top:16px"><button class="btn btn-primary" onclick="showInviteForm(${number})">${t('detail.invite')}</button></div>` : ''}
+        <div style="margin-top:16px"><a href="#/${state.type === 'job' ? 'jobs' : 'resumes'}" class="btn">← ${t('nav.resumes')}</a></div>
+      </div>
+    `
+    showContent(html)
+  } catch (e) {
+    showContent(`<p style="text-align:center;padding:48px;color:var(--danger)">${t('common.error')}: ${e.message}</p>`)
+  }
+  showLoading(false)
+}
+
+function showInviteForm(issueNumber) {
+  openModal(`
+    <h2>${t('detail.invite')}</h2>
+    <div class="form-group">
+      <label>${t('invite.yourInfo')}</label>
+      <input id="invite-name" placeholder="Your name / Company">
+    </div>
+    <div class="form-group">
+      <label>${t('invite.message')}</label>
+      <textarea id="invite-msg" rows="4" placeholder="Write your invitation message..."></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal()">${t('common.cancel')}</button>
+      <button class="btn btn-primary" onclick="sendInvite(${issueNumber})">${t('invite.send')}</button>
+    </div>
+  `)
+}
+
+async function sendInvite(issueNumber) {
+  const name = qs('#invite-name').value.trim()
+  const msg = qs('#invite-msg').value.trim()
+  if (!name || !msg) return alert(t('common.pleaseSelect'))
+
+  try {
+    showLoading(true)
+    await createIssue({
+      title: `Interview Invitation for #${issueNumber}`,
+      body: `**From:** ${name}\n**Target Issue:** #${issueNumber}\n\n${msg}`,
+      labels: ['action/send-email']
+    })
+    closeModal()
+    alert(t('detail.inviteSent'))
+  } catch (e) { alert(`${t('common.error')}: ${e.message}`) }
+  showLoading(false)
+}
+
+// --- Markdown renderer (minimal) ---
+// ponytail: simple regex-based markdown, no lib. Upgrade to marked.js if formatting needs grow.
+function renderMarkdown(md) {
+  let html = escapeHtml(md)
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>')
+  return `<p>${html}</p>`
+}
+
+// --- Utils ---
+function escapeHtml(str) {
+  const div = document.createElement('div')
+  div.textContent = str
+  return div.innerHTML
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr)
+  return d.toLocaleDateString(state.lang === 'zh' ? 'zh-CN' : state.lang === 'ja' ? 'ja-JP' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+// --- Init ---
+async function init() {
+  // Load config
+  await loadConfig()
+
+  // Load saved token
+  const savedToken = localStorage.getItem('gh_token')
+  if (savedToken) { state.token = savedToken; await fetchUser() }
+
+  // Load saved language
+  state.lang = localStorage.getItem('lang') || navigator.language.slice(0, 2) || 'en'
+  if (!['en', 'zh', 'ja'].includes(state.lang)) state.lang = 'en'
+
+  // Load locale
+  await loadLocale(state.lang)
+
+  // Populate language selector
+  const langSelect = qs('#lang-select')
+  langSelect.innerHTML = `
+    <option value="en">English</option>
+    <option value="zh">中文</option>
+    <option value="ja">日本語</option>
+  `
+  langSelect.value = state.lang
+  langSelect.addEventListener('change', () => {
+    state.lang = langSelect.value
+    localStorage.setItem('lang', state.lang)
+    loadLocale(state.lang).then(() => { applyI18n(); renderAuth(); router() })
+  })
+
+  applyI18n()
+  renderAuth()
+
+  // Listen for hash changes
+  window.addEventListener('hashchange', router)
+
+  // Initial route
+  router()
+}
+
+document.addEventListener('DOMContentLoaded', init)
