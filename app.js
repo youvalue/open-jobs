@@ -27,13 +27,19 @@ let roles = []
 let cities = {}
 
 async function loadConfig() {
-  const [cl, r, cn, us] = await Promise.all([
+  const [cl, r] = await Promise.all([
     fetch('config/country-language.json').then(r => r.json()),
     fetch('config/roles.json').then(r => r.json()),
-    fetch('config/cities/CN.json').then(r => r.json()),
-    fetch('config/cities/US.json').then(r => r.json()),
   ])
-  countryLang = cl; roles = r; cities = { CN: cn, US: us }
+  countryLang = cl; roles = r
+  const countryCodes = Object.keys(countryLang)
+  const cityResults = await Promise.all(
+    countryCodes.map(code =>
+      fetch(`config/cities/${code}.json`).then(r => r.json()).catch(() => [])
+    )
+  )
+  cities = {}
+  countryCodes.forEach((code, i) => { cities[code] = cityResults[i] })
 }
 
 async function loadLocale(lang) {
@@ -619,7 +625,7 @@ async function init() {
 
   // Load saved language
   state.lang = localStorage.getItem('lang') || navigator.language.slice(0, 2) || 'en'
-  if (!['en', 'zh', 'ja'].includes(state.lang)) state.lang = 'en'
+  if (!['en', 'zh', 'ja', 'fr', 'ru', 'de', 'ko'].includes(state.lang)) state.lang = 'en'
 
   // Load locale
   await loadLocale(state.lang)
@@ -630,6 +636,10 @@ async function init() {
     <option value="en">English</option>
     <option value="zh">中文</option>
     <option value="ja">日本語</option>
+    <option value="fr">Français</option>
+    <option value="ru">Русский</option>
+    <option value="de">Deutsch</option>
+    <option value="ko">한국어</option>
   `
   langSelect.value = state.lang
   langSelect.addEventListener('change', () => {
