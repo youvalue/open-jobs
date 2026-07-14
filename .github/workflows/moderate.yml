@@ -30,7 +30,7 @@ jobs:
               // Pharma
               /(?:viagra|cialis|weight\s*loss|enlargement|pharmacy)/i,
               // Scam patterns
-              /(?:congratulations|you\s*won|claim\s*your|act\s*fast|limited\s*time| urgency)/i,
+              /(?:congratulations|you\s*won|claim\s*your|act\s*fast|limited\s*time|urgency)/i,
               // Contact info abuse (phone numbers, multiple platforms)
               /(?:telegram|whatsapp|wechat|signal)\s*[:@]\s*\w{3,}/i,
               /(?:\+?\d[\d\s-]{8,}){2,}/,
@@ -38,6 +38,22 @@ jobs:
               /(?:make\s*money|work\s*from\s*home|passive\s*income|financial\s*freedom)/i,
               // URL shorteners (common spam vector)
               /(?:bit\.ly|tinyurl|t\.co|goo\.gl|is\.gd|short\.to)\/\w+/i,
+              // ponytail: below are non-English patterns, tested on original (pre-lowercase) text
+            ]
+
+            // --- non-English patterns: test on original text ---
+            const origText = issue.title + ' ' + (issue.body || '');
+            const nonEnPatterns = [
+              // Chinese spam
+              /(?:刷单|兼职|日赚|月入|网贷|贷款|博彩|赌博|彩票|麻将|棋牌|牛皮癣|发票|代孕|枪支|迷药|催情)/,
+              // Chinese crypto scams
+              /(?:加密货币|炒股|期货|外汇带单|稳赚不赔|保本保息|高额返利|拉人头)/,
+              // Chinese recruitment scams
+              /(?:打字员|录入员|挂机|薅羊毛|薅平台|免费领|扫码领|点击领取)/,
+              // Telegram/WhatsApp links (common in scam job posts)
+              /(?:t\.me|wa\.me|telegram\.me)\/\w+/i,
+              // Phone-only or link-only posts (very short body, mostly URL/number)
+              /^[\s\d\+().\-\/:htpsmail@comcnorg]{0,20}$/,
             ]
 
             let spamScore = 0;
@@ -45,6 +61,14 @@ jobs:
             for (const pattern of spamPatterns) {
               if (pattern.test(text)) { spamScore++; matched.push(pattern.source.slice(0, 40)); }
             }
+            for (const pattern of nonEnPatterns) {
+              if (pattern.test(origText)) { spamScore++; matched.push(pattern.source.slice(0, 40)); }
+            }
+
+            // --- rule-based: reject obviously bad posts ---
+            const contentBody = (() => { try { return JSON.parse(issue.body || '{}').content || ''; } catch { return issue.body || ''; } })();
+            if (issue.title.length < 4 && contentBody.length < 10) { spamScore += 2; matched.push('title+content too short'); }
+            if (/(.)\1{9,}/.test(origText)) { spamScore += 2; matched.push('repeated chars'); }
 
             if (spamScore >= 2) {
               await github.rest.issues.addLabels({
