@@ -89,6 +89,9 @@ function applyI18n() {
     const val = t(key)
     if (val !== key) el.textContent = val
   }
+  document.title = t('app.title')
+  const desc = qs('meta[name="description"]')
+  if (desc) desc.content = t('app.description')
 }
 
 async function startDeviceFlow() {

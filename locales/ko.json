@@ -327,5 +327,7 @@
   "about.database": "데이터베이스:",
   "about.automation": "자동화:",
   "about.i18n": "지원 언어:",
-  "about.viewOnGitHub": "GitHub에서 보기"
+  "about.viewOnGitHub": "GitHub에서 보기",
+  "app.title": "OpenJobs — 완전 무료 오픈 채용 플랫폼",
+  "app.description": "GitHub Issues 기반 완전 무료 오픈 채용 플랫폼. 제로 비용, 제로 인프라."
 }

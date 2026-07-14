@@ -325,5 +325,7 @@
   "about.database": "データベース：",
   "about.automation": "自動化：",
   "about.i18n": "対応言語：",
-  "about.viewOnGitHub": "GitHub で見る"
+  "about.viewOnGitHub": "GitHub で見る",
+  "app.title": "OpenJobs — 完全無料のオープン求人プラットフォーム",
+  "app.description": "GitHub Issues に基づく完全無料のオープン採用プラットフォーム。ゼロコスト、ゼロインフラ。"
 }

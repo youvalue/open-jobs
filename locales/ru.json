@@ -327,5 +327,7 @@
   "about.database": "База данных:",
   "about.automation": "Автоматизация:",
   "about.i18n": "Языки:",
-  "about.viewOnGitHub": "Смотреть на GitHub"
+  "about.viewOnGitHub": "Смотреть на GitHub",
+  "app.title": "OpenJobs — Бесплатная открытая платформа найма",
+  "app.description": "Полностью бесплатная открытая платформа найма на GitHub Issues. Нулевые затраты, нулевая инфраструктура."
 }

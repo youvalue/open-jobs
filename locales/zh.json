@@ -325,5 +325,7 @@
   "about.database": "数据存储：",
   "about.automation": "自动化处理：",
   "about.i18n": "语言支持：",
-  "about.viewOnGitHub": "在 GitHub 上查看"
+  "about.viewOnGitHub": "在 GitHub 上查看",
+  "app.title": "OpenJobs — 完全免费的开放招聘平台",
+  "app.description": "基于 GitHub Issues 的完全免费开放招聘平台。零成本、零基础设施。"
 }

@@ -327,5 +327,7 @@
   "about.database": "Datenbank:",
   "about.automation": "Automatisierung:",
   "about.i18n": "Sprachen:",
-  "about.viewOnGitHub": "Auf GitHub ansehen"
+  "about.viewOnGitHub": "Auf GitHub ansehen",
+  "app.title": "OpenJobs — Kostenlose offene Hiring-Plattform",
+  "app.description": "Komplett kostenlose, offene Hiring-Plattform auf GitHub Issues. Null Kosten, null Infrastruktur."
 }
