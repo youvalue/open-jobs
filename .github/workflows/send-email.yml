@@ -18,24 +18,75 @@ jobs:
             const body = issue.body || '';
             const targetMatch = body.match(/\*\*Target Issue:\*\*\s*#(\d+)/);
             const fromMatch = body.match(/\*\*From:\*\*\s*([^\n]+)/);
+            const msgMatch = body.match(/\*\*Target Issue:\*\*\s*#\d+\s*\n\n(.+)$/s);
             const targetIssueNumber = targetMatch ? targetMatch[1] : null;
             const fromName = fromMatch ? fromMatch[1].trim() : 'Unknown';
+            const message = msgMatch ? msgMatch[1].trim() : '';
 
-            // Get the target issue to find the email
-            if (targetIssueNumber) {
-              const { data: targetIssue } = await github.rest.issues.get({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: parseInt(targetIssueNumber)
-              });
-              const emailMatch = targetIssue.body.match(/\*\*.*?Email.*?\*\*:\s*([^\n]+)/);
-              const targetEmail = emailMatch ? emailMatch[1].trim() : null;
-
-              if (targetEmail) {
-                // ponytail: log the email that would be sent. Replace with actual email API call when EMAIL_API_KEY is configured.
-                console.log(`Would send email to ${targetEmail} from ${fromName}: ${body}`);
-              }
+            if (!targetIssueNumber) {
+              console.log('No target issue found, skipping.');
+              return;
             }
+
+            const { data: targetIssue } = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: parseInt(targetIssueNumber)
+            });
+            const emailMatch = targetIssue.body.match(/\*\*.*?\*\*:\s*([^\n]+)/);
+            const targetEmail = emailMatch ? emailMatch[1].trim() : null;
+
+            if (!targetEmail) {
+              console.log('No email found in target issue, skipping.');
+              return;
+            }
+
+            const emailApiKey = process.env.EMAIL_API_KEY;
+            if (!emailApiKey) {
+              console.log(`Would send email to ${targetEmail} from ${fromName}: ${message}`);
+              return;
+            }
+
+            // Send via Resend API
+            const isInvite = issue.title.includes('Interview Invitation');
+            const subject = isInvite
+              ? `[OpenJobs] Interview Invitation from ${fromName}`
+              : `[OpenJobs] Job Application from ${fromName}`;
+
+            const res = await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${emailApiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                from: 'OpenJobs <noreply@open-jobs.app>',
+                to: [targetEmail],
+                subject,
+                html: `
+                  <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px">
+                    <h2 style="color:#1a1a1a;border-bottom:2px solid #e5e7eb;padding-bottom:12px">
+                      ${isInvite ? '📬 Interview Invitation' : '📄 Job Application'}
+                    </h2>
+                    <p style="color:#666;margin-bottom:16px">
+                      <strong>${fromName}</strong> ${isInvite ? 'invited you for an interview' : 'applied to your listing'}.
+                    </p>
+                    <div style="background:#f9fafb;border-radius:8px;padding:16px;margin:16px 0;border:1px solid #e5e7eb">
+                      ${message.replace(/\n/g, '<br>')}
+                    </div>
+                    <p style="color:#999;font-size:12px;margin-top:24px">
+                      — <a href="https://youvalue.github.io/open-jobs/#/issue/${targetIssueNumber}">OpenJobs</a>
+                    </p>
+                  </div>
+                `,
+              })
+            });
+
+            if (!res.ok) {
+              const err = await res.text();
+              throw new Error(`Email API error: ${res.status} ${err}`);
+            }
+            console.log(`Email sent to ${targetEmail}`);
 
             // Clean up the action issue
             await github.rest.issues.update({
@@ -48,5 +99,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: 'Email action processed.'
+              body: `Email sent to ${targetEmail}.`
             });

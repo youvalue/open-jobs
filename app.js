@@ -19,6 +19,7 @@ let state = {
   issues: [],
   page: 1,
   loading: false,
+  search: '',
 }
 
 let locales = {}
@@ -248,7 +249,7 @@ function router() {
 }
 
 // --- List View ---
-async function renderList() {
+async function renderList(append = false) {
   showLoading(true)
   const labels = [`type-${state.type}`]
   if (state.country) labels.push(`country-${state.country}`)
@@ -256,13 +257,19 @@ async function renderList() {
   if (state.role) labels.push(`role-${state.role}`)
 
   try {
-    const issues = await listIssues(labels.join(','))
-    state.issues = issues
+    const issues = await listIssues(labels.join(','), state.page)
+    if (append) state.issues = state.issues.concat(issues)
+    else state.issues = issues
+
     const countries = Object.keys(countryLang)
     const citiesList = state.country ? (cities[state.country] || []) : []
 
     let html = `
       <div class="filters">
+        <div class="filter-group" style="flex:1;min-width:200px">
+          <label>${t('filter.search')}</label>
+          <input id="filter-search" type="text" value="${escapeHtml(state.search)}" placeholder="${t('filter.placeholder')}" onkeyup="onSearchKeyup(event)">
+        </div>
         <div class="filter-group">
           <label>${t('filter.country')}</label>
           <select id="filter-country" onchange="onFilterChange()">
@@ -291,14 +298,17 @@ async function renderList() {
       </div>
       <div class="issue-list">
     `
-    if (issues.length === 0) {
+    let displayIssues = state.issues
+    if (state.search) {
+      const q = state.search.toLowerCase()
+      displayIssues = displayIssues.filter(i => i.title.toLowerCase().includes(q) || (i.body || '').toLowerCase().includes(q))
+    }
+    if (displayIssues.length === 0) {
       html += `<p style="text-align:center;padding:48px;color:var(--text-secondary)">${t('common.noResults')}</p>`
     } else {
-      for (const issue of issues) {
+      for (const issue of displayIssues) {
         const labels = issue.labels.map(l => l.name || l)
-        const cityTag = labels.find(l => l.startsWith('city-'))
-        const roleTags = labels.filter(l => l.startsWith('role-'))
-        const summary = (issue.body || '').slice(0, 150)
+        const summary = (issue.body || '').replace(/^\*\*.*?\*\*:\s*[^\n]+\n\n---\n\n/, '').slice(0, 150)
         html += `
           <div class="issue-card" onclick="location.hash='#/issue/${issue.number}'">
             <h3>${escapeHtml(issue.title)}</h3>
@@ -323,6 +333,9 @@ async function renderList() {
           </div>
         `
       }
+      if (!state.search && issues.length >= 30) {
+        html += `<div style="text-align:center;padding:24px"><button class="btn" onclick="loadMore()">${t('common.loadMore')}</button></div>`
+      }
     }
     html += '</div>'
     showContent(html)
@@ -336,12 +349,26 @@ function onFilterChange() {
   state.country = qs('#filter-country').value
   state.city = qs('#filter-city').value
   state.role = qs('#filter-role').value
+  state.page = 1
   router()
 }
 
 function clearFilters() {
-  state.country = ''; state.city = ''; state.role = ''
+  state.country = ''; state.city = ''; state.role = ''; state.search = ''; state.page = 1
   router()
+}
+
+function onSearchKeyup(e) {
+  if (e.key === 'Enter') {
+    state.search = qs('#filter-search').value.trim()
+    state.page = 1
+    router()
+  }
+}
+
+function loadMore() {
+  state.page++
+  renderList(true)
 }
 
 // --- Post Form ---
@@ -705,15 +732,30 @@ async function sendApply(issueNumber) {
 // ponytail: simple regex-based markdown, no lib. Upgrade to marked.js if formatting needs grow.
 function renderMarkdown(md) {
   let html = escapeHtml(md)
+    // Headers
+    .replace(/^#### (.+)$/gm, '<h4>$1</h4>')
     .replace(/^### (.+)$/gm, '<h3>$1</h3>')
     .replace(/^## (.+)$/gm, '<h2>$1</h2>')
     .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    // Bold, italic, strikethrough
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/~~(.+?)~~/g, '<del>$1</del>')
+    // Inline code
     .replace(/`([^`]+)`/g, '<code>$1</code>')
+    // Links and images
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%">')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    // Horizontal rule
+    .replace(/^---$/gm, '<hr>')
+    // Blockquote
+    .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+    // Unordered list
     .replace(/^- (.+)$/gm, '<li>$1</li>')
     .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+    // Ordered list
+    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+    // Paragraphs
     .replace(/\n\n/g, '</p><p>')
     .replace(/\n/g, '<br>')
   return `<p>${html}</p>`

@@ -18,18 +18,32 @@ jobs:
             const labels = issue.labels.map(l => l.name);
             if (labels.includes('reviewed') || labels.includes('spam')) return;
 
-            // ponytail: regex-based spam detection, no external API for MVP
             const spamPatterns = [
-              /(?:buy|sell|cheap|discount|price|offer|limited|act now|click here)\s*(?:now|today)?/i,
+              // Commercial spam
+              /(?:buy|sell|cheap|discount|price|offer|limited|act\s*now|click\s*here)\s*(?:now|today)?/i,
+              // Excessive links
               /(?:https?:\/\/[^\s]+){3,}/,
+              // Excessive emails
               /(?:[\w.-]+@[\w.-]+\.\w+){3,}/,
-              /(?:casino|gambling|crypto\s*bonus|free\s*money|earn\s*\$)/i,
-              /(?:viagra|cialis|weight\s*loss|enlargement)/i,
+              // Gambling / crypto
+              /(?:casino|gambling|crypto\s*bonus|free\s*money|earn\s*\$|bitcoin\s*mining)/i,
+              // Pharma
+              /(?:viagra|cialis|weight\s*loss|enlargement|pharmacy)/i,
+              // Scam patterns
+              /(?:congratulations|you\s*won|claim\s*your|act\s*fast|limited\s*time| urgency)/i,
+              // Contact info abuse (phone numbers, multiple platforms)
+              /(?:telegram|whatsapp|wechat|signal)\s*[:@]\s*\w{3,}/i,
+              /(?:\+?\d[\d\s-]{8,}){2,}/,
+              // Generic spam phrases
+              /(?:make\s*money|work\s*from\s*home|passive\s*income|financial\s*freedom)/i,
+              // URL shorteners (common spam vector)
+              /(?:bit\.ly|tinyurl|t\.co|goo\.gl|is\.gd|short\.to)\/\w+/i,
             ]
 
             let spamScore = 0;
+            const matched = [];
             for (const pattern of spamPatterns) {
-              if (pattern.test(text)) spamScore++;
+              if (pattern.test(text)) { spamScore++; matched.push(pattern.source.slice(0, 40)); }
             }
 
             if (spamScore >= 2) {
@@ -49,7 +63,7 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                body: 'This post has been automatically closed due to spam detection.'
+                body: `This post has been automatically closed due to spam detection.\n\n_Matched patterns: ${matched.join(', ')}_`
               });
             } else {
               await github.rest.issues.addLabels({
