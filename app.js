@@ -522,7 +522,8 @@ async function saveEdit(number) {
     showLoading(true)
     await updateIssue(number, { title, body: `**${t('post.email')}:** ${email}\n\n---\n\n${body}` })
     closeModal()
-    renderMyPosts()
+    if (location.hash.startsWith('#/issue/')) location.hash = `#/issue/${number}`
+    else renderMyPosts()
   } catch (e) { alert(`${t('common.error')}: ${e.message}`) }
   showLoading(false)
 }
@@ -577,6 +578,7 @@ async function renderDetail(number) {
         <div class="body">${renderMarkdown(issue.body || '')}</div>
         <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
           ${state.token && state.user && issue.user.login === state.user.login ? `
+            <button class="btn btn-sm" onclick="editMyIssue(${number})">${t('my.edit')}</button>
             <button class="btn btn-sm" onclick="toggleIssue(${number}, ${issue.state === 'open' ? false : true}); location.reload()">${issue.state === 'open' ? t('my.close') : t('my.reopen')}</button>
             <button class="btn btn-sm btn-danger" onclick="deleteIssue(${number})">${t('my.delete')}</button>
           ` : ''}
