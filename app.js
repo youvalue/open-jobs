@@ -94,7 +94,8 @@ const GH_AUTH = 'https://github.com/login/device'
 const GH_TOKEN = 'https://github.com/login/oauth/access_token'
 
 async function startDeviceFlow() {
-  const deviceRes = await fetch('https://github.com/login/device/code', {
+  const proxy = 'https://corsproxy.io/?'
+  const deviceRes = await fetch(proxy + encodeURIComponent('https://github.com/login/device/code'), {
     method: 'POST',
     headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
     body: JSON.stringify({ client_id: CONFIG.clientId, scope: CONFIG.scope })
@@ -115,7 +116,7 @@ async function startDeviceFlow() {
   return new Promise((resolve, reject) => {
     const poll = setInterval(async () => {
       try {
-        const res = await fetch('https://github.com/login/oauth/access_token', {
+        const res = await fetch(proxy + encodeURIComponent('https://github.com/login/oauth/access_token'), {
           method: 'POST',
           headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
           body: JSON.stringify({
