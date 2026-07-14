@@ -3,7 +3,7 @@
 const CONFIG = {
   owner: 'youvalue',
   repo: 'open-jobs',
-  clientId: 'YOUR_GITHUB_CLIENT_ID',
+  clientId: 'Ov23liSPwUU05lmZ88Yz',
   scope: 'public_repo',
   apiBase: 'https://api.github.com',
 }
