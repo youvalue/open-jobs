@@ -15,7 +15,7 @@ Pure static SPA, zero build step. Served via GitHub Pages (root directory).
 
 ## Key Quirks & Gotchas
 
-- **OAuth Device Flow** goes through `corsproxy.io` — GitHub's `github.com/login/device/code` endpoint rejects browser CORS. The proxy is the only workaround for a serverless static site.
+- **OAuth Device Flow** goes through a self-hosted Cloudflare Worker (`open-jobs.631008982.workers.dev`) — GitHub's `github.com/login/device/code` endpoint rejects browser CORS. The proxy is the only workaround for a serverless static site.
 - **City data** loads dynamically per country code (`config/cities/{CODE}.json`). Every country in `config/country-language.json` needs a matching city file, or it 404s.
 - **No build/lint/test** — no `package.json`, no bundler, no typechecker. Edit directly, commit, push. GitHub Pages auto-deploys from `main`.
 - **No test suite** exists. Validate changes by opening `index.html` locally or pushing to Pages.

