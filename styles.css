@@ -111,8 +111,25 @@ button { font-family: inherit; }
   color: var(--c-text);
   text-decoration: none;
   letter-spacing: -0.3px;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
 }
 .logo:hover { text-decoration: none; color: var(--c-primary); }
+
+.slogan {
+  font-size: var(--fs-xs);
+  color: var(--c-text-muted);
+  white-space: nowrap;
+}
+
+.github-link {
+  color: var(--c-text-secondary);
+  display: flex;
+  align-items: center;
+  transition: color var(--transition);
+}
+.github-link:hover { color: var(--c-text); }
 
 .tabs {
   display: flex;
@@ -641,6 +658,7 @@ button { font-family: inherit; }
   #header { padding: 0 var(--sp-3); height: 48px; }
   .header-left { gap: var(--sp-3); }
   .logo { font-size: var(--fs-base); }
+  .slogan { display: none; }
   .tab { padding: 4px 10px; font-size: var(--fs-xs); min-height: 28px; }
   .tabs { gap: 0; }
 

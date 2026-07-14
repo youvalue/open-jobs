@@ -242,6 +242,8 @@ function router() {
     renderMyPosts()
   } else if (route === 'issue') {
     renderDetail(parts[1])
+  } else if (route === 'about') {
+    renderAbout()
   } else {
     showContent(`<p>404</p>`)
     showLoading(false)
@@ -729,6 +731,54 @@ async function sendApply(issueNumber) {
   } catch (e) { alert(`${t('common.error')}: ${e.message}`) }
   showLoading(false)
 }
+
+function renderAbout() {
+  showLoading(false)
+  showContent(`
+    <div class="about" style="max-width:720px;margin:0 auto;padding:48px 16px">
+      <h1 style="margin-bottom:8px">${t('about.title')}</h1>
+      <p style="color:var(--text-secondary);font-size:var(--fs-lg);margin-bottom:32px">${t('about.subtitle')}</p>
+
+      <h2>${t('about.whyTitle')}</h2>
+      <table style="width:100%;border-collapse:collapse;margin:16px 0 32px">
+        <thead><tr style="border-bottom:2px solid var(--border)">
+          <th style="text-align:left;padding:8px"></th>
+          <th style="text-align:left;padding:8px">${t('about.traditional')}</th>
+          <th style="text-align:left;padding:8px">${t('about.openjobs')}</th>
+        </tr></thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px">${t('about.cost')}</td><td style="padding:8px">$200+/mo</td><td style="padding:8px"><strong>$0</strong></td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px">${t('about.infra')}</td><td style="padding:8px">Servers, DBs, CDN</td><td style="padding:8px"><strong>GitHub Pages</strong></td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px">${t('about.data')}</td><td style="padding:8px">Private DB</td><td style="padding:8px"><strong>GitHub Issues</strong></td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px">${t('about.auth')}</td><td style="padding:8px">Email/Password</td><td style="padding:8px"><strong>GitHub OAuth</strong></td></tr>
+          <tr><td style="padding:8px">${t('about.moderation')}</td><td style="padding:8px">Black box</td><td style="padding:8px"><strong>GitHub Actions</strong></td></tr>
+        </tbody>
+      </table>
+
+      <h2>${t('about.featuresTitle')}</h2>
+      <ul style="line-height:2;margin:16px 0 32px">
+        <li>${t('about.feature1')}</li>
+        <li>${t('about.feature2')}</li>
+        <li>${t('about.feature3')}</li>
+        <li>${t('about.feature4')}</li>
+        <li>${t('about.feature5')}</li>
+      </ul>
+
+      <h2>${t('about.techTitle')}</h2>
+      <ul style="line-height:2;margin:16px 0 32px">
+        <li><strong>${t('about.hosting')}</strong> GitHub Pages</li>
+        <li><strong>${t('about.database')}</strong> GitHub Issues</li>
+        <li><strong>${t('about.automation')}</strong> GitHub Actions</li>
+        <li><strong>${t('about.i18n')}</strong> 7 languages</li>
+      </ul>
+
+      <p style="margin-top:32px">
+        <a href="https://github.com/youvalue/open-jobs" target="_blank" class="btn btn-primary">${t('about.viewOnGitHub')}</a>
+      </p>
+    </div>
+  `)
+}
+
 // ponytail: simple regex-based markdown, no lib. Upgrade to marked.js if formatting needs grow.
 function renderMarkdown(md) {
   let html = escapeHtml(md)
