@@ -576,7 +576,7 @@ async function deleteIssue(number) {
   if (!confirm(t('my.confirmDelete'))) return
   try {
     showLoading(true)
-    await gh(`/repos/${CONFIG.owner}/${CONFIG.repo}/issues/${number}`, { method: 'DELETE' })
+    await updateIssue(number, { state: 'closed' })
     location.hash = '#/my'
   } catch (e) { alert(`${t('common.error')}: ${e.message}`) }
   showLoading(false)
