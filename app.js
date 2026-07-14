@@ -225,8 +225,9 @@ async function updateIssue(number, data) {
 
 // --- Router ---
 function router() {
-  const hash = location.hash.slice(1) || '/resumes'
-  const parts = hash.split('/')
+  const hash = (location.hash.slice(1).replace(/^\//, '') || 'resumes')
+  const [routePath, ...rest] = hash.split('/')
+  const parts = [routePath.split('?')[0], ...rest]
   const route = parts[0]
 
   // Update active tab
