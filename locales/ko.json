@@ -339,5 +339,11 @@
   "hero.post": "무료로 채용 공고 게시",
   "hero.stat1": "영구 무료",
   "hero.stat2": "투명한 급여",
-  "hero.stat3": "커뮤니티 주도"
+  "hero.stat3": "커뮤니티 주도",
+  "hero.resumeTitle": "다음 기회를 찾아보세요.",
+  "hero.resumeSub": "투명한 기업의 공개 채용 정보를 둘러보세요. 유료 벽 없음, 숨겨진 비용 없음.",
+  "hero.postResume": "무료로 이력서 게시",
+  "hero.jobTitle": "최고의 인재를 무료로 채용하세요.",
+  "hero.postJob": "무료로 채용 공고 게시",
+  "hero.jobSub": "무제한 채용 공고를 게시하고 우수한 후보자에게 도달하세요. 제로 비용, 제로 번거로움."
 }

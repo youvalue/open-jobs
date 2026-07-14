@@ -337,5 +337,11 @@
   "hero.post": "免费发布职位",
   "hero.stat1": "永久免费",
   "hero.stat2": "薪资透明",
-  "hero.stat3": "社区驱动"
+  "hero.stat3": "社区驱动",
+  "hero.resumeTitle": "发现你的下一个机会。",
+  "hero.resumeSub": "浏览来自透明雇主的开放职位。无付费墙、无隐藏费用。",
+  "hero.postResume": "免费发布简历",
+  "hero.jobTitle": "免费招聘顶尖人才。",
+  "hero.jobSub": "发布无限职位，触达优秀候选人。零成本、零麻烦。",
+  "hero.postJob": "免费发布职位"
 }

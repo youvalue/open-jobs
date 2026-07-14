@@ -270,13 +270,13 @@ async function renderList(append = false) {
     const citiesList = state.country ? (cities[state.country] || []) : []
 
     const showHero = !state.country && !state.city && !state.role && !state.search && state.page === 1
+    const isResume = state.type === 'resume'
     let html = showHero ? `
       <div class="hero">
-        <h1>${t('hero.title')}</h1>
-        <p class="hero-sub">${t('hero.subtitle')}</p>
+        <h1>${isResume ? t('hero.resumeTitle') : t('hero.jobTitle')}</h1>
+        <p class="hero-sub">${isResume ? t('hero.resumeSub') : t('hero.jobSub')}</p>
         <div class="hero-actions">
-          <a href="javascript:void(0)" class="btn btn-primary btn-lg" onclick="document.querySelector('.issue-list')?.scrollIntoView({behavior:'smooth'})">${t('hero.explore')}</a>
-          <a href="#/new?type=job" class="btn btn-lg">${t('hero.post')}</a>
+          <a href="#/new?type=${state.type}" class="btn btn-primary btn-xl">${isResume ? t('hero.postResume') : t('hero.postJob')}</a>
         </div>
         <div class="hero-stats">
           <div class="hero-stat"><span class="hero-stat-icon">💚</span><span>${t('hero.stat1')}</span></div>

@@ -375,5 +375,11 @@
   "hero.post": "Post a Job - Free",
   "hero.stat1": "Forever Free",
   "hero.stat2": "Transparent",
-  "hero.stat3": "Community Driven"
+  "hero.stat3": "Community Driven",
+  "hero.resumeTitle": "Find Your Next Opportunity.",
+  "hero.resumeSub": "Browse open positions from transparent employers. No paywalls, no hidden fees.",
+  "hero.postResume": "Post Your Resume - Free",
+  "hero.jobTitle": "Hire Top Talent, Free.",
+  "hero.jobSub": "Post unlimited jobs and reach qualified candidates. Zero cost, zero hassle.",
+  "hero.postJob": "Post a Job - Free"
 }

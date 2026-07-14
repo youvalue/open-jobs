@@ -339,5 +339,11 @@
   "hero.post": "Publier une offre - Gratuit",
   "hero.stat1": "Gratuit pour toujours",
   "hero.stat2": "Transparent",
-  "hero.stat3": "Communauté"
+  "hero.stat3": "Communauté",
+  "hero.resumeTitle": "Trouvez votre prochaine opportunité.",
+  "hero.postResume": "Publiez votre CV - Gratuit",
+  "hero.resumeSub": "Parcourez les offres d'employeurs transparents. Pas de murs payants, pas de frais cachés.",
+  "hero.jobTitle": "Recrutez les meilleurs talents, gratuitement.",
+  "hero.jobSub": "Publiez des offres illimitées et touchez des candidats qualifiés. Zéro coût, zéro tracas.",
+  "hero.postJob": "Publier une offre - Gratuit"
 }
