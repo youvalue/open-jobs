@@ -267,14 +267,14 @@ async function renderList() {
           <label>${t('filter.country')}</label>
           <select id="filter-country" onchange="onFilterChange()">
             <option value="">${t('filter.all')}</option>
-            ${countries.map(c => `<option value="${c}" ${c === state.country ? 'selected' : ''}>${c}</option>`).join('')}
+            ${countries.map(c => `<option value="${c}" ${c === state.country ? 'selected' : ''}>${t('country.' + c)}</option>`).join('')}
           </select>
         </div>
         <div class="filter-group">
           <label>${t('filter.city')}</label>
           <select id="filter-city" onchange="onFilterChange()">
             <option value="">${t('filter.all')}</option>
-            ${citiesList.map(c => `<option value="${c}" ${c === state.city ? 'selected' : ''}>${c}</option>`).join('')}
+            ${citiesList.map(c => `<option value="${c}" ${c === state.city ? 'selected' : ''}>${t('city.' + c)}</option>`).join('')}
           </select>
         </div>
         <div class="filter-group">
@@ -309,7 +309,10 @@ async function renderList() {
             </div>
             <div class="tags">
               ${labels.filter(l => !l.startsWith('type-')).map(l => {
-                const display = l.startsWith('role-') ? t('role.' + l.replace('role-', '')) : l
+                let display = l
+                if (l.startsWith('role-')) display = t('role.' + l.replace('role-', ''))
+                else if (l.startsWith('country-')) display = t('country.' + l.replace('country-', ''))
+                else if (l.startsWith('city-')) display = t('city.' + l.replace('city-', ''))
                 return `<span class="tag ${l.replace(/[^a-z0-9-]/g, '')}">${display}</span>`
               }).join('')}
             </div>
@@ -360,7 +363,7 @@ async function renderPostForm() {
         <label>${t('post.country')}</label>
         <select id="post-country" onchange="onPostCountryChange()">
           <option value="">${t('common.pleaseSelect')}</option>
-          ${countries.map(c => `<option value="${c}">${c}</option>`).join('')}
+          ${countries.map(c => `<option value="${c}">${t('country.' + c)}</option>`).join('')}
         </select>
       </div>
       <div class="form-group">
@@ -404,7 +407,7 @@ function onPostCountryChange() {
   const country = qs('#post-country').value
   const citySelect = qs('#post-city')
   const citiesList = cities[country] || []
-  citySelect.innerHTML = `<option value="">${t('common.pleaseSelect')}</option>` + citiesList.map(c => `<option value="${c}">${c}</option>`).join('')
+  citySelect.innerHTML = `<option value="">${t('common.pleaseSelect')}</option>` + citiesList.map(c => `<option value="${c}">${t('city.' + c)}</option>`).join('')
   // Auto-switch language based on country
   if (countryLang[country]) {
     state.lang = countryLang[country]
@@ -540,7 +543,10 @@ async function renderDetail(number) {
       <div class="detail">
         <div class="tags">
           ${labels.map(l => {
-            const display = l.startsWith('role-') ? t('role.' + l.replace('role-', '')) : l
+            let display = l
+            if (l.startsWith('role-')) display = t('role.' + l.replace('role-', ''))
+            else if (l.startsWith('country-')) display = t('country.' + l.replace('country-', ''))
+            else if (l.startsWith('city-')) display = t('city.' + l.replace('city-', ''))
             return `<span class="tag ${l.replace(/[^a-z0-9-]/g, '')}">${display}</span>`
           }).join('')}
         </div>
