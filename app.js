@@ -487,24 +487,62 @@ async function renderMyPosts() {
 
 async function editMyIssue(number) {
   const issue = await getIssue(number)
+  const labels = issue.labels.map(l => l.name || l)
   const body = issue.body || ''
   const emailMatch = body.match(/^\*\*.*?Email.*?\*\*:\s*([^\n]+)/m)
   const existingEmail = emailMatch ? emailMatch[1].trim() : ''
   const existingBody = emailMatch ? body.replace(/^\*\*.*?Email.*?\*\*:\s*[^\n]+\n\n---\n\n/, '') : body
 
+  const type = (labels.find(l => l.startsWith('type-')) || '').replace('type-', '') || 'resume'
+  const country = (labels.find(l => l.startsWith('country-')) || '').replace('country-', '')
+  const city = (labels.find(l => l.startsWith('city-')) || '').replace('city-', '')
+  const role = (labels.find(l => l.startsWith('role-')) || '').replace('role-', '')
+  const countries = Object.keys(countryLang)
+  const citiesList = country ? (cities[country] || []) : []
+
   openModal(`
     <h2>${t('my.edit')} #${number}</h2>
+    <div class="form-group">
+      <label>${t('post.type')}</label>
+      <select id="edit-type">
+        <option value="resume" ${type === 'resume' ? 'selected' : ''}>${t('post.resume')}</option>
+        <option value="job" ${type === 'job' ? 'selected' : ''}>${t('post.job')}</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>${t('post.country')}</label>
+      <select id="edit-country" onchange="onEditCountryChange()">
+        <option value="">${t('common.pleaseSelect')}</option>
+        ${countries.map(c => `<option value="${c}" ${c === country ? 'selected' : ''}>${t('country.' + c)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>${t('post.city')}</label>
+      <select id="edit-city">
+        <option value="">${t('common.pleaseSelect')}</option>
+        ${citiesList.map(c => `<option value="${c}" ${c === city ? 'selected' : ''}>${t('city.' + c)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>${t('post.role')}</label>
+      <select id="edit-role">
+        <option value="">${t('common.pleaseSelect')}</option>
+        ${roles.map(r => `<option value="${r}" ${r === role ? 'selected' : ''}>${t('role.' + r)}</option>`).join('')}
+      </select>
+    </div>
     <div class="form-group">
       <label>${t('post.titleLabel')}</label>
       <input id="edit-title" value="${escapeHtml(issue.title)}">
     </div>
     <div class="form-group">
-      <label>${t('post.email')}</label>
-      <input id="edit-email" value="${escapeHtml(existingEmail)}">
-    </div>
-    <div class="form-group">
       <label>${t('post.description')}</label>
       <textarea id="edit-body">${escapeHtml(existingBody)}</textarea>
+      <div class="form-hint">${t('common.markdown')}</div>
+    </div>
+    <div class="form-group">
+      <label>${t('post.email')}</label>
+      <input id="edit-email" value="${escapeHtml(existingEmail)}">
+      <div class="form-hint" style="color:var(--danger)">${t('common.emailPublic')}</div>
     </div>
     <div class="form-actions">
       <button class="btn" onclick="closeModal()">${t('common.cancel')}</button>
@@ -513,14 +551,31 @@ async function editMyIssue(number) {
   `)
 }
 
+function onEditCountryChange() {
+  const country = qs('#edit-country').value
+  const citySelect = qs('#edit-city')
+  const citiesList = cities[country] || []
+  citySelect.innerHTML = `<option value="">${t('common.pleaseSelect')}</option>` + citiesList.map(c => `<option value="${c}">${t('city.' + c)}</option>`).join('')
+}
+
 async function saveEdit(number) {
   const title = qs('#edit-title').value.trim()
   const email = qs('#edit-email').value.trim()
   const body = qs('#edit-body').value.trim()
+  const type = qs('#edit-type').value
+  const country = qs('#edit-country').value
+  const city = qs('#edit-city').value
+  const role = qs('#edit-role').value
   if (!title || !body) return
+
+  const labels = [`type-${type}`, `status-open`]
+  if (country) labels.push(`country-${country}`)
+  if (city) labels.push(`city-${city}`)
+  if (role) labels.push(`role-${role}`)
+
   try {
     showLoading(true)
-    await updateIssue(number, { title, body: `**${t('post.email')}:** ${email}\n\n---\n\n${body}` })
+    await updateIssue(number, { title, body: `**${t('post.email')}:** ${email}\n\n---\n\n${body}`, labels })
     closeModal()
     if (location.hash.startsWith('#/issue/')) location.hash = `#/issue/${number}`
     else renderMyPosts()
