@@ -50,9 +50,7 @@ async function loadLocale(lang) {
 }
 
 function t(key) {
-  const keys = key.split('.')
-  let val = locales[state.lang]
-  for (const k of keys) { if (val) val = val[k] }
+  const val = locales[state.lang] && locales[state.lang][key]
   return val || key
 }
 
