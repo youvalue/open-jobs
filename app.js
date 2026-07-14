@@ -77,7 +77,10 @@ function openModal(html) {
   qs('#modal').innerHTML = html
   qs('#modal-overlay').classList.remove('hidden')
 }
-function closeModal() { qs('#modal-overlay').classList.add('hidden') }
+function closeModal() {
+  if (window._oauthTimer) { clearTimeout(window._oauthTimer); window._oauthTimer = null }
+  qs('#modal-overlay').classList.add('hidden')
+}
 qs('#modal-overlay').addEventListener('click', e => { if (e.target === qs('#modal-overlay')) closeModal() })
 
 // --- i18n ---
@@ -101,23 +104,28 @@ async function startDeviceFlow() {
   try { device = JSON.parse(deviceText) } catch { throw new Error('Proxy returned non-JSON: ' + deviceText.slice(0, 200)) }
   if (device.error) { throw new Error(device.error_description) }
 
+  // Auto-open verification URL in popup
+  window.open(device.verification_uri, 'github-auth', 'width=600,height=700')
+
   openModal(`
     <div class="auth-box">
       <h2>${t('auth.loginTitle')}</h2>
       <p>${t('auth.enterCode')}</p>
       <div class="auth-code">${device.user_code}</div>
-      <p><a href="${device.verification_uri}" target="_blank">${device.verification_uri}</a></p>
+      <p><button class="btn btn-sm" onclick="navigator.clipboard.writeText('${device.user_code}')">${t('auth.copyCode')}</button></p>
       <p style="margin-top:12px;font-size:13px;color:var(--text-secondary)">${t('auth.waiting')}</p>
       <p><button class="btn btn-sm" onclick="closeModal()" style="margin-top:12px">${t('common.cancel')}</button></p>
     </div>
   `)
 
-  let retries = 0
-  const maxRetries = 30
+  let timer = null
   let interval = (device.interval || 5) * 1000
-  const poll = () => {
-    retries++
-    if (retries > maxRetries) { closeModal(); alert('Login timeout.'); return }
+
+  function scheduleNext() {
+    timer = setTimeout(poll, interval)
+  }
+
+  function poll() {
     fetch(proxy + encodeURIComponent('https://github.com/login/oauth/access_token'), {
       method: 'POST',
       headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
@@ -130,25 +138,26 @@ async function startDeviceFlow() {
     .then(r => r.text())
     .then(text => {
       let data
-      try { data = JSON.parse(text) } catch { return }
+      try { data = JSON.parse(text) } catch { return scheduleNext() }
       if (data.access_token) {
         closeModal()
         state.token = data.access_token
         localStorage.setItem('gh_token', data.access_token)
         fetchUser().then(() => { renderAuth(); router() })
       } else if (data.error === 'slow_down') {
-        interval = (data.interval || 10) * 1000
-        setTimeout(poll, interval)
+        interval = Math.max(interval, (data.interval || 10) * 1000)
+        scheduleNext()
       } else if (data.error === 'authorization_pending') {
-        setTimeout(poll, interval)
+        scheduleNext()
       } else {
         closeModal()
-        throw new Error(data.error_description || data.error)
       }
     })
-    setTimeout(poll, interval)
+    .catch(() => scheduleNext())
   }
-  poll()
+
+  scheduleNext()
+  window._oauthTimer = timer
 }
 
 async function fetchUser() {
