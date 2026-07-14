@@ -94,13 +94,15 @@ const GH_AUTH = 'https://github.com/login/device'
 const GH_TOKEN = 'https://github.com/login/oauth/access_token'
 
 async function startDeviceFlow() {
-  const proxy = 'https://corsproxy.io/?'
+  const proxy = 'https://api.allorigins.win/raw?url='
   const deviceRes = await fetch(proxy + encodeURIComponent('https://github.com/login/device/code'), {
     method: 'POST',
     headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
     body: JSON.stringify({ client_id: CONFIG.clientId, scope: CONFIG.scope })
   })
-  const device = await deviceRes.json()
+  const deviceText = await deviceRes.text()
+  let device
+  try { device = JSON.parse(deviceText) } catch { throw new Error('Proxy returned non-JSON: ' + deviceText.slice(0, 200)) }
   if (device.error) { throw new Error(device.error_description) }
 
   openModal(`
@@ -135,7 +137,9 @@ async function startDeviceFlow() {
             grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
           })
         })
-        const data = await res.json()
+        const text = await res.text()
+        let data
+        try { data = JSON.parse(text) } catch { return }
         if (data.access_token) {
           clearInterval(poll)
           closeModal()
