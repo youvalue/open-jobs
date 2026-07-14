@@ -89,12 +89,8 @@ function applyI18n() {
   }
 }
 
-// --- OAuth Device Flow ---
-const GH_AUTH = 'https://github.com/login/device'
-const GH_TOKEN = 'https://github.com/login/oauth/access_token'
-
 async function startDeviceFlow() {
-  const proxy = 'https://api.allorigins.win/raw?url='
+  const proxy = 'https://corsproxy.io/?'
   const deviceRes = await fetch(proxy + encodeURIComponent('https://github.com/login/device/code'), {
     method: 'POST',
     headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
@@ -118,52 +114,41 @@ async function startDeviceFlow() {
 
   let retries = 0
   const maxRetries = 30
-  return new Promise((resolve, reject) => {
-    const poll = setInterval(async () => {
-      retries++
-      if (retries > maxRetries) {
-        clearInterval(poll)
+  let interval = (device.interval || 5) * 1000
+  const poll = () => {
+    retries++
+    if (retries > maxRetries) { closeModal(); alert('Login timeout.'); return }
+    fetch(proxy + encodeURIComponent('https://github.com/login/oauth/access_token'), {
+      method: 'POST',
+      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: CONFIG.clientId,
+        device_code: device.device_code,
+        grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
+      })
+    })
+    .then(r => r.text())
+    .then(text => {
+      let data
+      try { data = JSON.parse(text) } catch { return }
+      if (data.access_token) {
         closeModal()
-        alert('Login timeout. Please try again.')
-        return
-      }
-      try {
-        const res = await fetch(proxy + encodeURIComponent('https://github.com/login/oauth/access_token'), {
-          method: 'POST',
-          headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            client_id: CONFIG.clientId,
-            device_code: device.device_code,
-            grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
-          })
-        })
-        const text = await res.text()
-        let data
-        try { data = JSON.parse(text) } catch { return }
-        if (data.access_token) {
-          clearInterval(poll)
-          closeModal()
-          state.token = data.access_token
-          localStorage.setItem('gh_token', data.access_token)
-          await fetchUser()
-          renderAuth()
-          router()
-        } else if (data.error === 'authorization_pending') {
-          // still waiting
-        } else if (data.error === 'slow_down') {
-          // ignore, just keep polling
-        } else {
-          clearInterval(poll)
-          closeModal()
-          throw new Error(data.error_description || data.error)
-        }
-      } catch (e) {
-        clearInterval(poll)
+        state.token = data.access_token
+        localStorage.setItem('gh_token', data.access_token)
+        fetchUser().then(() => { renderAuth(); router() })
+      } else if (data.error === 'slow_down') {
+        interval = (data.interval || 10) * 1000
+        setTimeout(poll, interval)
+      } else if (data.error === 'authorization_pending') {
+        setTimeout(poll, interval)
+      } else {
         closeModal()
-        console.error('OAuth error:', e)
+        throw new Error(data.error_description || data.error)
       }
-    }, 5000)
-  })
+    })
+    setTimeout(poll, interval)
+  }
+  poll()
 }
 
 async function fetchUser() {
