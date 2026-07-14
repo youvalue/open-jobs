@@ -327,5 +327,15 @@
   "about.i18n": "対応言語：",
   "about.viewOnGitHub": "GitHub で見る",
   "app.title": "OpenJobs — 完全無料のオープン求人プラットフォーム",
-  "app.description": "GitHub Issues に基づく完全無料のオープン採用プラットフォーム。ゼロコスト、ゼロインフラ。"
+  "app.description": "GitHub Issues に基づく完全無料のオープン採用プラットフォーム。ゼロコスト、ゼロインフラ。",
+  "post.salary": "給与",
+  "post.salaryPlaceholder": "例：500万 - 800万円 / 年",
+  "post.salaryHint": "任意。空欄で応相談。",
+  "hero.title": "採用は無料でオープンであるべき。",
+  "hero.subtitle": "有料壁なし。履歴書販売なし。アルゴリズムのブラックボックスなし。求職者と正直な企業に100%無料。",
+  "hero.explore": "オープンな機会を探す",
+  "hero.post": "無料で求人を投稿",
+  "hero.stat1": "永久無料",
+  "hero.stat2": "給与透明",
+  "hero.stat3": "コミュニティ主導"
 }

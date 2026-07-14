@@ -329,5 +329,15 @@
   "about.i18n": "Langues :",
   "about.viewOnGitHub": "Voir sur GitHub",
   "app.title": "OpenJobs — Plateforme de recrutement ouverte et gratuite",
-  "app.description": "Plateforme de recrutement entièrement gratuite et ouverte, construite sur GitHub Issues. Zéro coût, zéro infrastructure."
+  "app.description": "Plateforme de recrutement entièrement gratuite et ouverte, construite sur GitHub Issues. Zéro coût, zéro infrastructure.",
+  "post.salary": "Salaire",
+  "post.salaryPlaceholder": "ex: 50k - 80k / an",
+  "post.salaryHint": "Optionnel. Laissez vide pour négociable.",
+  "hero.title": "Le recrutement devrait être gratuit et ouvert.",
+  "hero.subtitle": "Pas de murs payants. Pas de vente de CV. Pas de boîtes noires algorithmiques. 100% gratuit pour les candidats et les employeurs honnêtes.",
+  "hero.explore": "Explorer les opportunités",
+  "hero.post": "Publier une offre - Gratuit",
+  "hero.stat1": "Gratuit pour toujours",
+  "hero.stat2": "Transparent",
+  "hero.stat3": "Communauté"
 }

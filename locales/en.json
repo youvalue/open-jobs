@@ -365,5 +365,15 @@
   "about.i18n": "Languages:",
   "about.viewOnGitHub": "View on GitHub",
   "app.title": "OpenJobs — Open job platform for everyone",
-  "app.description": "Completely free, open hiring platform built on GitHub Issues. Zero cost, zero infrastructure."
+  "app.description": "Completely free, open hiring platform built on GitHub Issues. Zero cost, zero infrastructure.",
+  "post.salary": "Salary",
+  "post.salaryPlaceholder": "e.g. $100k - $150k / year",
+  "post.salaryHint": "Optional. Leave empty for negotiable.",
+  "hero.title": "Hiring should be Free and Open.",
+  "hero.subtitle": "No paywalls. No resume selling. No algorithm black boxes. 100% free for job seekers and honest employers.",
+  "hero.explore": "Explore Open Opportunities",
+  "hero.post": "Post a Job - Free",
+  "hero.stat1": "Forever Free",
+  "hero.stat2": "Transparent",
+  "hero.stat3": "Community Driven"
 }

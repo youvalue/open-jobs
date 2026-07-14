@@ -329,5 +329,15 @@
   "about.i18n": "지원 언어:",
   "about.viewOnGitHub": "GitHub에서 보기",
   "app.title": "OpenJobs — 완전 무료 오픈 채용 플랫폼",
-  "app.description": "GitHub Issues 기반 완전 무료 오픈 채용 플랫폼. 제로 비용, 제로 인프라."
+  "app.description": "GitHub Issues 기반 완전 무료 오픈 채용 플랫폼. 제로 비용, 제로 인프라.",
+  "post.salary": "급여",
+  "post.salaryPlaceholder": "예: 5000만 - 8000만원 / 년",
+  "post.salaryHint": "선택 사항. 비워두면 협의 가능.",
+  "hero.title": "채용은 무료이고开放적이어야 합니다.",
+  "hero.subtitle": "유료 벽 없음. 이력서 판매 없음. 알고리즘 블랙박스 없음. 구직자와 정직한 기업을 위한 100% 무료.",
+  "hero.explore": "공개 기회 둘러보기",
+  "hero.post": "무료로 채용 공고 게시",
+  "hero.stat1": "영구 무료",
+  "hero.stat2": "투명한 급여",
+  "hero.stat3": "커뮤니티 주도"
 }

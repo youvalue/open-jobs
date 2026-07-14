@@ -269,7 +269,24 @@ async function renderList(append = false) {
     const countries = Object.keys(countryLang)
     const citiesList = state.country ? (cities[state.country] || []) : []
 
-    let html = `
+    const showHero = !state.country && !state.city && !state.role && !state.search && state.page === 1
+    let html = showHero ? `
+      <div class="hero">
+        <h1>${t('hero.title')}</h1>
+        <p class="hero-sub">${t('hero.subtitle')}</p>
+        <div class="hero-actions">
+          <a href="#/resumes" class="btn btn-primary btn-lg">${t('hero.explore')}</a>
+          <a href="#/new?type=job" class="btn btn-lg">${t('hero.post')}</a>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat"><span class="hero-stat-icon">💚</span><span>${t('hero.stat1')}</span></div>
+          <div class="hero-stat"><span class="hero-stat-icon">🔓</span><span>${t('hero.stat2')}</span></div>
+          <div class="hero-stat"><span class="hero-stat-icon">🤝</span><span>${t('hero.stat3')}</span></div>
+        </div>
+      </div>
+    ` : ''
+
+    html += `
       <div class="filters">
         <div class="filter-group" style="flex:1;min-width:200px">
           <label>${t('filter.search')}</label>
@@ -419,6 +436,11 @@ async function renderPostForm() {
         <input id="post-title" type="text" placeholder="${t('post.titlePlaceholder')}">
       </div>
       <div class="form-group">
+        <label>${t('post.salary')}</label>
+        <input id="post-salary" type="text" placeholder="${t('post.salaryPlaceholder')}">
+        <div class="form-hint">${t('post.salaryHint')}</div>
+      </div>
+      <div class="form-group">
         <label>${t('post.description')}</label>
         <textarea id="post-body" placeholder="${t('post.placeholder')}"></textarea>
         <div class="form-hint">${t('common.markdown')}</div>
@@ -457,6 +479,7 @@ async function submitPost() {
   const city = qs('#post-city').value
   const role = qs('#post-role').value
   const title = qs('#post-title').value.trim()
+  const salary = qs('#post-salary').value.trim()
   const body = qs('#post-body').value.trim()
   const email = qs('#post-email').value.trim()
 
@@ -468,7 +491,8 @@ async function submitPost() {
   const labels = [`type-${type}`, `country-${country}`, `city-${city}`, `status-open`]
   if (role) labels.push(`role-${role}`)
 
-  const issueBody = `**${t('post.email')}:** ${email}\n\n---\n\n${body}`
+  const salaryLine = salary ? `**${t('post.salary')}:** ${salary}\n` : ''
+  const issueBody = `${salaryLine}**${t('post.email')}:** ${email}\n\n---\n\n${body}`
 
   try {
     showLoading(true)
@@ -521,9 +545,11 @@ async function editMyIssue(number) {
   const issue = await getIssue(number)
   const labels = issue.labels.map(l => l.name || l)
   const body = issue.body || ''
-  const emailMatch = body.match(/^\*\*.*?\*\*:\s*([^\n]+)/m)
+  const salaryMatch = body.match(/\*\*.*?(?:Salary|薪资|給与|Gehalt|Salaire|Зарплата|급여).*?\*\*:\s*([^\n]+)/i)
+  const existingSalary = salaryMatch ? salaryMatch[1].trim() : ''
+  const emailMatch = body.match(/\*\*.*?(?:Email|邮箱|メール|E-Mail|Email|Электронная|이메일).*?\*\*:\s*([^\n]+)/i)
   const existingEmail = emailMatch ? emailMatch[1].trim() : ''
-  const existingBody = emailMatch ? body.replace(/^\*\*.*?\*\*:\s*[^\n]+\n\n---\n\n/, '') : body
+  const existingBody = emailMatch ? body.replace(/^\*\*.*?\*\*:\s*[^\n]+\n(?:\*\*.*?\*\*:\s*[^\n]+\n)?\n---\n\n/, '') : body
 
   const type = (labels.find(l => l.startsWith('type-')) || '').replace('type-', '') || 'resume'
   const country = (labels.find(l => l.startsWith('country-')) || '').replace('country-', '')
@@ -556,6 +582,10 @@ async function editMyIssue(number) {
       <input id="edit-title" value="${escapeHtml(issue.title)}">
     </div>
     <div class="form-group">
+      <label>${t('post.salary')}</label>
+      <input id="edit-salary" value="${escapeHtml(existingSalary)}">
+    </div>
+    <div class="form-group">
       <label>${t('post.description')}</label>
       <textarea id="edit-body">${escapeHtml(existingBody)}</textarea>
       <div class="form-hint">${t('common.markdown')}</div>
@@ -574,6 +604,7 @@ async function editMyIssue(number) {
 
 async function saveEdit(number) {
   const title = qs('#edit-title').value.trim()
+  const salary = qs('#edit-salary').value.trim()
   const email = qs('#edit-email').value.trim()
   const body = qs('#edit-body').value.trim()
   const type = qs('#edit-type').value
@@ -585,9 +616,10 @@ async function saveEdit(number) {
   if (country) labels.push(`country-${country}`)
   if (role) labels.push(`role-${role}`)
 
+  const salaryLine = salary ? `**${t('post.salary')}:** ${salary}\n` : ''
   try {
     showLoading(true)
-    await updateIssue(number, { title, body: `**${t('post.email')}:** ${email}\n\n---\n\n${body}`, labels })
+    await updateIssue(number, { title, body: `${salaryLine}**${t('post.email')}:** ${email}\n\n---\n\n${body}`, labels })
     closeModal()
     if (location.hash.startsWith('#/issue/')) location.hash = `#/issue/${number}`
     else renderMyPosts()

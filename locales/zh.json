@@ -327,5 +327,15 @@
   "about.i18n": "语言支持：",
   "about.viewOnGitHub": "在 GitHub 上查看",
   "app.title": "OpenJobs — 完全免费的开放招聘平台",
-  "app.description": "基于 GitHub Issues 的完全免费开放招聘平台。零成本、零基础设施。"
+  "app.description": "基于 GitHub Issues 的完全免费开放招聘平台。零成本、零基础设施。",
+  "post.salary": "薪资",
+  "post.salaryPlaceholder": "例如：15k - 25k / 月",
+  "post.salaryHint": "可选。留空表示面议。",
+  "hero.title": "招聘，本该免费且开放。",
+  "hero.subtitle": "无付费墙、无简历贩卖、无算法黑箱。100% 为求职者与真诚的企业服务。",
+  "hero.explore": "探索开放机会",
+  "hero.post": "免费发布职位",
+  "hero.stat1": "永久免费",
+  "hero.stat2": "薪资透明",
+  "hero.stat3": "社区驱动"
 }

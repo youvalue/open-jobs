@@ -329,5 +329,15 @@
   "about.i18n": "Sprachen:",
   "about.viewOnGitHub": "Auf GitHub ansehen",
   "app.title": "OpenJobs — Kostenlose offene Hiring-Plattform",
-  "app.description": "Komplett kostenlose, offene Hiring-Plattform auf GitHub Issues. Null Kosten, null Infrastruktur."
+  "app.description": "Komplett kostenlose, offene Hiring-Plattform auf GitHub Issues. Null Kosten, null Infrastruktur.",
+  "post.salary": "Gehalt",
+  "post.salaryPlaceholder": "z.B. 60k - 90k / Jahr",
+  "post.salaryHint": "Optional. Leer lassen für Verhandlungssache.",
+  "hero.title": "Einstellen sollte kostenlos und offen sein.",
+  "hero.subtitle": "Keine Bezahlschranken. Kein Lebenslaufverkauf. Keine Algorithmus-Blackboxes. 100% kostenlos für Arbeitssuchende und ehrliche Arbeitgeber.",
+  "hero.explore": "Offene Möglichkeiten entdecken",
+  "hero.post": "Kostenlos Stelle einstellen",
+  "hero.stat1": "Für immer kostenlos",
+  "hero.stat2": "Transparent",
+  "hero.stat3": "Community-getrieben"
 }
