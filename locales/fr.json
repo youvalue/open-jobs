@@ -298,5 +298,11 @@
   "post.error": "Échec de la publication. Veuillez réessayer",
   "auth.requireLogin": "Veuillez vous connecter",
   "common.reviewed": "Vérifié",
-  "common.spam": "Spam"
+  "common.spam": "Spam",
+  "my.delete": "Supprimer",
+  "my.confirmDelete": "Êtes-vous sûr de vouloir supprimer ?",
+  "detail.apply": "Envoyer une candidature",
+  "detail.applyPlaceholder": "Écrivez votre message de candidature...",
+  "detail.applySend": "Envoyer",
+  "detail.applySent": "Candidature envoyée !"
 }

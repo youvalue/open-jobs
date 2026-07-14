@@ -536,6 +536,16 @@ async function toggleIssue(number, open) {
   showLoading(false)
 }
 
+async function deleteIssue(number) {
+  if (!confirm(t('my.confirmDelete'))) return
+  try {
+    showLoading(true)
+    await gh(`/repos/${CONFIG.owner}/${CONFIG.repo}/issues/${number}`, { method: 'DELETE' })
+    location.hash = '#/my'
+  } catch (e) { alert(`${t('common.error')}: ${e.message}`) }
+  showLoading(false)
+}
+
 // --- Detail View ---
 async function renderDetail(number) {
   showLoading(true)
@@ -565,7 +575,15 @@ async function renderDetail(number) {
           · ${issue.state === 'open' ? t('status.open') : t('status.closed')}
         </div>
         <div class="body">${renderMarkdown(issue.body || '')}</div>
-        ${state.token ? `<div style="margin-top:16px"><button class="btn btn-primary" onclick="showInviteForm(${number})">${t('detail.invite')}</button></div>` : ''}
+        <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+          ${state.token && state.user && issue.user.login === state.user.login ? `
+            <button class="btn btn-sm" onclick="toggleIssue(${number}, ${issue.state === 'open' ? false : true}); location.reload()">${issue.state === 'open' ? t('my.close') : t('my.reopen')}</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteIssue(${number})">${t('my.delete')}</button>
+          ` : ''}
+          ${state.token && state.user && issue.user.login !== state.user.login ? `
+            <button class="btn btn-primary" onclick="${isResume ? `showInviteForm(${number})` : `showApplyForm(${number})`}">${isResume ? t('detail.invite') : t('detail.apply')}</button>
+          ` : ''}
+        </div>
         <div style="margin-top:16px"><a href="#/${state.type === 'job' ? 'jobs' : 'resumes'}" class="btn">← ${t('nav.resumes')}</a></div>
       </div>
     `
@@ -612,7 +630,41 @@ async function sendInvite(issueNumber) {
   showLoading(false)
 }
 
-// --- Markdown renderer (minimal) ---
+function showApplyForm(issueNumber) {
+  openModal(`
+    <h2>${t('detail.apply')}</h2>
+    <div class="form-group">
+      <label>${t('invite.yourInfo')}</label>
+      <input id="apply-name" placeholder="${t('invite.yourInfo')}">
+    </div>
+    <div class="form-group">
+      <label>${t('invite.message')}</label>
+      <textarea id="apply-msg" rows="4" placeholder="${t('detail.applyPlaceholder')}"></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal()">${t('common.cancel')}</button>
+      <button class="btn btn-primary" onclick="sendApply(${issueNumber})">${t('detail.applySend')}</button>
+    </div>
+  `)
+}
+
+async function sendApply(issueNumber) {
+  const name = qs('#apply-name').value.trim()
+  const msg = qs('#apply-msg').value.trim()
+  if (!name || !msg) return alert(t('common.pleaseSelect'))
+
+  try {
+    showLoading(true)
+    await createIssue({
+      title: `Application for #${issueNumber}`,
+      body: `**From:** ${name}\n**Target Issue:** #${issueNumber}\n\n${msg}`,
+      labels: ['action/send-email']
+    })
+    closeModal()
+    alert(t('detail.applySent'))
+  } catch (e) { alert(`${t('common.error')}: ${e.message}`) }
+  showLoading(false)
+}
 // ponytail: simple regex-based markdown, no lib. Upgrade to marked.js if formatting needs grow.
 function renderMarkdown(md) {
   let html = escapeHtml(md)

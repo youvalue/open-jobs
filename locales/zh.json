@@ -296,5 +296,11 @@
   "post.error": "发布失败，请重试",
   "auth.requireLogin": "请先登录",
   "common.reviewed": "已审核",
-  "common.spam": "垃圾信息"
+  "common.spam": "垃圾信息",
+  "my.delete": "删除",
+  "my.confirmDelete": "确定要删除吗？",
+  "detail.apply": "投递简历",
+  "detail.applyPlaceholder": "写下你的求职留言...",
+  "detail.applySend": "发送",
+  "detail.applySent": "简历已投递！"
 }

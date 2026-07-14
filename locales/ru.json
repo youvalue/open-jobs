@@ -298,5 +298,11 @@
   "post.error": "Не удалось опубликовать. Попробуйте снова",
   "auth.requireLogin": "Пожалуйста, войдите в систему",
   "common.reviewed": "Проверено",
-  "common.spam": "Спам"
+  "common.spam": "Спам",
+  "my.delete": "Удалить",
+  "my.confirmDelete": "Вы уверены, что хотите удалить?",
+  "detail.apply": "Откликнуться",
+  "detail.applyPlaceholder": "Напишите сообщение о вашем отклике...",
+  "detail.applySend": "Отправить",
+  "detail.applySent": "Отклик отправлен!"
 }

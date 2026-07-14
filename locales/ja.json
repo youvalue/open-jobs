@@ -296,5 +296,11 @@
   "post.error": "投稿に失敗しました。もう一度お試しください",
   "auth.requireLogin": "ログインしてください",
   "common.reviewed": "審査済み",
-  "common.spam": "スパム"
+  "common.spam": "スパム",
+  "my.delete": "削除",
+  "my.confirmDelete": "本当に削除しますか？",
+  "detail.apply": "応募する",
+  "detail.applyPlaceholder": "応募メッセージを書いてください...",
+  "detail.applySend": "送信",
+  "detail.applySent": "応募が送信されました！"
 }

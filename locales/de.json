@@ -298,5 +298,11 @@
   "post.error": "Veröffentlichung fehlgeschlagen. Bitte versuchen Sie es erneut",
   "auth.requireLogin": "Bitte anmelden",
   "common.reviewed": "Überprüft",
-  "common.spam": "Spam"
+  "common.spam": "Spam",
+  "my.delete": "Löschen",
+  "my.confirmDelete": "Möchten Sie wirklich löschen?",
+  "detail.apply": "Bewerbung senden",
+  "detail.applyPlaceholder": "Schreiben Sie Ihre Bewerbungsnachricht...",
+  "detail.applySend": "Senden",
+  "detail.applySent": "Bewerbung gesendet!"
 }

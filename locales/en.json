@@ -334,5 +334,11 @@
   "city.WashingtonDC": "Washington D.C.",
   "city.Nashville": "Nashville",
   "city.Minneapolis": "Minneapolis",
-  "city.Raleigh": "Raleigh"
+  "city.Raleigh": "Raleigh",
+  "my.delete": "Delete",
+  "my.confirmDelete": "Are you sure you want to delete this?",
+  "detail.apply": "Send Application",
+  "detail.applyPlaceholder": "Write your application message...",
+  "detail.applySend": "Send",
+  "detail.applySent": "Application sent!"
 }
