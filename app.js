@@ -281,7 +281,7 @@ async function renderList() {
           <label>${t('filter.role')}</label>
           <select id="filter-role" onchange="onFilterChange()">
             <option value="">${t('filter.all')}</option>
-            ${roles.map(r => `<option value="${r}" ${r === state.role ? 'selected' : ''}>${r}</option>`).join('')}
+            ${roles.map(r => `<option value="${r}" ${r === state.role ? 'selected' : ''}>${t('role.' + r)}</option>`).join('')}
           </select>
         </div>
         <div class="filter-actions">
@@ -308,7 +308,10 @@ async function renderList() {
               <span>${t('common.updated')} ${formatDate(issue.updated_at)}</span>
             </div>
             <div class="tags">
-              ${labels.filter(l => !l.startsWith('type-')).map(l => `<span class="tag ${l.replace(/[^a-z0-9-]/g, '')}">${l}</span>`).join('')}
+              ${labels.filter(l => !l.startsWith('type-')).map(l => {
+                const display = l.startsWith('role-') ? t('role.' + l.replace('role-', '')) : l
+                return `<span class="tag ${l.replace(/[^a-z0-9-]/g, '')}">${display}</span>`
+              }).join('')}
             </div>
             ${summary ? `<div class="summary">${escapeHtml(summary)}${summary.length >= 150 ? '...' : ''}</div>` : ''}
           </div>
@@ -370,7 +373,7 @@ async function renderPostForm() {
         <label>${t('post.role')}</label>
         <select id="post-role">
           <option value="">${t('common.pleaseSelect')}</option>
-          ${roles.map(r => `<option value="${r}">${r}</option>`).join('')}
+          ${roles.map(r => `<option value="${r}">${t('role.' + r)}</option>`).join('')}
         </select>
       </div>
       <div class="form-group">
@@ -536,7 +539,10 @@ async function renderDetail(number) {
     const html = `
       <div class="detail">
         <div class="tags">
-          ${labels.map(l => `<span class="tag ${l.replace(/[^a-z0-9-]/g, '')}">${l}</span>`).join('')}
+          ${labels.map(l => {
+            const display = l.startsWith('role-') ? t('role.' + l.replace('role-', '')) : l
+            return `<span class="tag ${l.replace(/[^a-z0-9-]/g, '')}">${display}</span>`
+          }).join('')}
         </div>
         <h2>${escapeHtml(issue.title)}</h2>
         <div class="meta">
