@@ -296,5 +296,7 @@
   "nav.home": "Startseite",
   "filter.apply": "Filter anwenden",
   "post.error": "Veröffentlichung fehlgeschlagen. Bitte versuchen Sie es erneut",
-  "auth.requireLogin": "Bitte anmelden"
+  "auth.requireLogin": "Bitte anmelden",
+  "common.reviewed": "Überprüft",
+  "common.spam": "Spam"
 }

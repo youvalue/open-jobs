@@ -313,6 +313,9 @@ async function renderList() {
                 if (l.startsWith('role-')) display = t('role.' + l.replace('role-', ''))
                 else if (l.startsWith('country-')) display = t('country.' + l.replace('country-', ''))
                 else if (l.startsWith('city-')) display = t('city.' + l.replace('city-', ''))
+                else if (l.startsWith('status-')) display = t('status.' + l.replace('status-', ''))
+                else if (l === 'reviewed') display = t('common.reviewed')
+                else if (l === 'spam') display = t('common.spam')
                 return `<span class="tag ${l.replace(/[^a-z0-9-]/g, '')}">${display}</span>`
               }).join('')}
             </div>
@@ -549,6 +552,10 @@ async function renderDetail(number) {
             if (l.startsWith('role-')) display = t('role.' + l.replace('role-', ''))
             else if (l.startsWith('country-')) display = t('country.' + l.replace('country-', ''))
             else if (l.startsWith('city-')) display = t('city.' + l.replace('city-', ''))
+            else if (l.startsWith('type-')) display = t('post.' + l.replace('type-', ''))
+            else if (l.startsWith('status-')) display = t('status.' + l.replace('status-', ''))
+            else if (l === 'reviewed') display = t('common.reviewed')
+            else if (l === 'spam') display = t('common.spam')
             return `<span class="tag ${l.replace(/[^a-z0-9-]/g, '')}">${display}</span>`
           }).join('')}
         </div>

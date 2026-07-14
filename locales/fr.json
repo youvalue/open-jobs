@@ -296,5 +296,7 @@
   "nav.home": "Accueil",
   "filter.apply": "Appliquer les filtres",
   "post.error": "Échec de la publication. Veuillez réessayer",
-  "auth.requireLogin": "Veuillez vous connecter"
+  "auth.requireLogin": "Veuillez vous connecter",
+  "common.reviewed": "Vérifié",
+  "common.spam": "Spam"
 }

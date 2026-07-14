@@ -121,6 +121,8 @@
   "common.markdown": "Markdown supported",
   "common.or": "or",
   "common.anonymous": "Anonymous",
+  "common.reviewed": "Reviewed",
+  "common.spam": "Spam",
   "role.frontend": "Frontend Developer",
   "role.backend": "Backend Developer",
   "role.fullstack": "Full Stack Developer",

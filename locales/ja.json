@@ -294,5 +294,7 @@
   "nav.home": "ホーム",
   "filter.apply": "フィルター適用",
   "post.error": "投稿に失敗しました。もう一度お試しください",
-  "auth.requireLogin": "ログインしてください"
+  "auth.requireLogin": "ログインしてください",
+  "common.reviewed": "審査済み",
+  "common.spam": "スパム"
 }

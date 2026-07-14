@@ -296,5 +296,7 @@
   "nav.home": "홈",
   "filter.apply": "필터 적용",
   "post.error": "게시 실패. 다시 시도해 주세요",
-  "auth.requireLogin": "로그인해 주세요"
+  "auth.requireLogin": "로그인해 주세요",
+  "common.reviewed": "검토 완료",
+  "common.spam": "스팸"
 }

@@ -294,5 +294,7 @@
   "nav.home": "首页",
   "filter.apply": "应用筛选",
   "post.error": "发布失败，请重试",
-  "auth.requireLogin": "请先登录"
+  "auth.requireLogin": "请先登录",
+  "common.reviewed": "已审核",
+  "common.spam": "垃圾信息"
 }
