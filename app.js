@@ -381,7 +381,7 @@ async function renderPostForm() {
       </div>
       <div class="form-group">
         <label>${t('post.titleLabel')}</label>
-        <input id="post-title" type="text" placeholder="e.g. Senior Frontend Developer looking for opportunities">
+        <input id="post-title" type="text" placeholder="${t('post.titlePlaceholder')}">
       </div>
       <div class="form-group">
         <label>${t('post.description')}</label>
@@ -440,7 +440,9 @@ async function submitPost() {
     await createIssue({ title, body: issueBody, labels })
     showContent(`<div style="text-align:center;padding:48px"><h2>${t('post.success')}</h2><p style="margin-top:12px"><a href="#/${type}s">← ${t('nav.resumes')}</a></p></div>`)
   } catch (e) {
-    alert(`${t('common.error')}: ${e.message}`)
+    const msg = e.message === 'Requires authentication' ? t('auth.requireLogin') : e.message
+    alert(`${t('common.error')}: ${msg}`)
+  }
   }
   showLoading(false)
 }
