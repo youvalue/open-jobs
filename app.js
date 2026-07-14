@@ -110,11 +110,21 @@ async function startDeviceFlow() {
       <div class="auth-code">${device.user_code}</div>
       <p><a href="${device.verification_uri}" target="_blank">${device.verification_uri}</a></p>
       <p style="margin-top:12px;font-size:13px;color:var(--text-secondary)">${t('auth.waiting')}</p>
+      <p><button class="btn btn-sm" onclick="closeModal()" style="margin-top:12px">${t('common.cancel')}</button></p>
     </div>
   `)
 
+  let retries = 0
+  const maxRetries = 30
   return new Promise((resolve, reject) => {
     const poll = setInterval(async () => {
+      retries++
+      if (retries > maxRetries) {
+        clearInterval(poll)
+        closeModal()
+        alert('Login timeout. Please try again.')
+        return
+      }
       try {
         const res = await fetch(proxy + encodeURIComponent('https://github.com/login/oauth/access_token'), {
           method: 'POST',
