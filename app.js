@@ -545,11 +545,22 @@ async function editMyIssue(number) {
   const issue = await getIssue(number)
   const labels = issue.labels.map(l => l.name || l)
   const body = issue.body || ''
-  const salaryMatch = body.match(/\*\*.*?(?:Salary|薪资|給与|Gehalt|Salaire|Зарплата|급여).*?\*\*:\s*([^\n]+)/i)
-  const existingSalary = salaryMatch ? salaryMatch[1].trim() : ''
-  const emailMatch = body.match(/\*\*.*?(?:Email|邮箱|メール|E-Mail|Email|Электронная|이메일).*?\*\*:\s*([^\n]+)/i)
-  const existingEmail = emailMatch ? emailMatch[1].trim() : ''
-  const existingBody = emailMatch ? body.replace(/^\*\*.*?\*\*:\s*[^\n]+\n(?:\*\*.*?\*\*:\s*[^\n]+\n)?\n---\n\n/, '') : body
+
+  // Extract email and salary from bold markdown lines at the top
+  const boldLines = (body.match(/^\*\*.*?\*\*:\s*[^\n]+/gm) || [])
+  let existingEmail = ''
+  let existingSalary = ''
+  for (const line of boldLines) {
+    const val = line.replace(/^\*\*.*?\*\*:\s*/, '').trim()
+    if (val.includes('@')) existingEmail = val
+    else existingSalary = val
+  }
+
+  // Strip all **...:** lines and --- separator from body
+  const existingBody = body
+    .replace(/^\*\*.*?\*\*:[^\n]*\n?/gm, '')
+    .replace(/^---\s*\n?/gm, '')
+    .trim()
 
   const type = (labels.find(l => l.startsWith('type-')) || '').replace('type-', '') || 'resume'
   const country = (labels.find(l => l.startsWith('country-')) || '').replace('country-', '')
