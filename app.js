@@ -446,7 +446,6 @@ async function submitPost() {
     const msg = e.message === 'Requires authentication' ? t('auth.requireLogin') : e.message
     alert(`${t('common.error')}: ${msg}`)
   }
-  }
   showLoading(false)
 }
 
