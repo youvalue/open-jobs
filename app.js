@@ -489,6 +489,20 @@ async function submitPost() {
     return
   }
 
+  const text = (title + ' ' + body).toLowerCase()
+  if (title.trim().length < 4 || body.trim().length < 10) {
+    alert(t('common.error') + ': ' + (state.lang === 'zh' ? '标题至少4字，内容至少10字' : 'Title min 4 chars, content min 10 chars'))
+    return
+  }
+  if ((text.match(/https?:\/\//g) || []).length >= 3) {
+    alert(t('common.error') + ': ' + (state.lang === 'zh' ? '链接过多，请删除多余链接' : 'Too many links, please remove extras'))
+    return
+  }
+  if (/(?:刷单|博彩|赌博|网贷|发票|枪支|迷药|viagra|casino|crypto\s*bonus)/i.test(text)) {
+    alert(t('common.error') + ': ' + (state.lang === 'zh' ? '内容包含违禁词' : 'Content contains prohibited words'))
+    return
+  }
+
   const labels = [`type-${type}`, `country-${country}`, `city-${city}`, `status-open`]
   if (role) labels.push(`role-${role}`)
 
@@ -604,6 +618,20 @@ async function saveEdit(number) {
   const country = qs('#edit-country-val').value
   const role = qs('#edit-role-val').value
   if (!title || !body) return
+
+  const text = (title + ' ' + body).toLowerCase()
+  if (title.trim().length < 4 || body.trim().length < 10) {
+    alert(t('common.error') + ': ' + (state.lang === 'zh' ? '标题至少4字，内容至少10字' : 'Title min 4 chars, content min 10 chars'))
+    return
+  }
+  if ((text.match(/https?:\/\//g) || []).length >= 3) {
+    alert(t('common.error') + ': ' + (state.lang === 'zh' ? '链接过多，请删除多余链接' : 'Too many links, please remove extras'))
+    return
+  }
+  if (/(?:刷单|博彩|赌博|网贷|发票|枪支|迷药|viagra|casino|crypto\s*bonus)/i.test(text)) {
+    alert(t('common.error') + ': ' + (state.lang === 'zh' ? '内容包含违禁词' : 'Content contains prohibited words'))
+    return
+  }
 
   const labels = [`type-${type}`, `status-open`]
   if (country) labels.push(`country-${country}`)
