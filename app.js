@@ -330,7 +330,8 @@ async function renderList(append = false) {
     } else {
       for (const issue of displayIssues) {
         const labels = issue.labels.map(l => l.name || l)
-        const summary = (issue.body || '').replace(/^\*\*.*?\*\*:\s*[^\n]+\n\n---\n\n/, '').slice(0, 150)
+        const { content: summaryRaw } = parseIssueBody(issue.body)
+        const summary = summaryRaw.slice(0, 150)
         html += `
           <div class="issue-card" onclick="location.hash='#/issue/${issue.number}'">
             <h3>${escapeHtml(issue.title)}</h3>
@@ -491,12 +492,9 @@ async function submitPost() {
   const labels = [`type-${type}`, `country-${country}`, `city-${city}`, `status-open`]
   if (role) labels.push(`role-${role}`)
 
-  const salaryLine = salary ? `**${t('post.salary')}:** ${salary}\n` : ''
-  const issueBody = `${salaryLine}**${t('post.email')}:** ${email}\n\n---\n\n${body}`
-
   try {
     showLoading(true)
-    await createIssue({ title, body: issueBody, labels })
+    await createIssue({ title, body: buildIssueBody({ email, salary, content: body, type, country, city, role }), labels })
     showContent(`<div style="text-align:center;padding:48px"><h2>${t('post.success')}</h2><p style="margin-top:12px"><a href="#/${type}s">← ${t('nav.resumes')}</a></p></div>`)
   } catch (e) {
     const msg = e.message === 'Requires authentication' ? t('auth.requireLogin') : e.message
@@ -544,23 +542,7 @@ async function renderMyPosts() {
 async function editMyIssue(number) {
   const issue = await getIssue(number)
   const labels = issue.labels.map(l => l.name || l)
-  const body = issue.body || ''
-
-  // Extract email and salary from bold markdown lines at the top
-  const boldLines = (body.match(/^\*\*.*?\*\*:\s*[^\n]+/gm) || [])
-  let existingEmail = ''
-  let existingSalary = ''
-  for (const line of boldLines) {
-    const val = line.replace(/^\*\*.*?\*\*:\s*/, '').trim()
-    if (val.includes('@')) existingEmail = val
-    else existingSalary = val
-  }
-
-  // Strip all **...:** lines and --- separator from body
-  const existingBody = body
-    .replace(/^\*\*.*?\*\*:[^\n]*\n?/gm, '')
-    .replace(/^---\s*\n?/gm, '')
-    .trim()
+  const { email: existingEmail, salary: existingSalary, content: existingBody } = parseIssueBody(issue.body)
 
   const type = (labels.find(l => l.startsWith('type-')) || '').replace('type-', '') || 'resume'
   const country = (labels.find(l => l.startsWith('country-')) || '').replace('country-', '')
@@ -627,10 +609,9 @@ async function saveEdit(number) {
   if (country) labels.push(`country-${country}`)
   if (role) labels.push(`role-${role}`)
 
-  const salaryLine = salary ? `**${t('post.salary')}:** ${salary}\n` : ''
   try {
     showLoading(true)
-    await updateIssue(number, { title, body: `${salaryLine}**${t('post.email')}:** ${email}\n\n---\n\n${body}`, labels })
+    await updateIssue(number, { title, body: buildIssueBody({ email, salary, content: body, type, country, city, role }), labels })
     closeModal()
     if (location.hash.startsWith('#/issue/')) location.hash = `#/issue/${number}`
     else renderMyPosts()
@@ -685,7 +666,7 @@ async function renderDetail(number) {
           · ${t('common.updated')} ${formatDate(issue.updated_at)}
           · ${issue.state === 'open' ? t('status.open') : t('status.closed')}
         </div>
-        <div class="body">${renderMarkdown(issue.body || '')}</div>
+        <div class="body">${renderMarkdown(parseIssueBody(issue.body).content)}</div>
         <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
           ${state.token && state.user && issue.user.login === state.user.login ? `
             <button class="btn btn-sm" onclick="editMyIssue(${number})">${t('my.edit')}</button>
@@ -733,7 +714,7 @@ async function sendInvite(issueNumber) {
     showLoading(true)
     await createIssue({
       title: `Interview Invitation for #${issueNumber}`,
-      body: `**From:** ${name}\n**Target Issue:** #${issueNumber}\n\n${msg}`,
+      body: JSON.stringify({ from: name, targetIssue: issueNumber, message: msg }),
       labels: ['action/send-email']
     })
     closeModal()
@@ -769,7 +750,7 @@ async function sendApply(issueNumber) {
     showLoading(true)
     await createIssue({
       title: `Application for #${issueNumber}`,
-      body: `**From:** ${name}\n**Target Issue:** #${issueNumber}\n\n${msg}`,
+      body: JSON.stringify({ from: name, targetIssue: issueNumber, message: msg }),
       labels: ['action/send-email']
     })
     closeModal()
@@ -858,6 +839,29 @@ function renderMarkdown(md) {
 }
 
 // --- Utils ---
+function parseIssueBody(body) {
+  if (!body) return { email: '', salary: '', content: '' }
+  try {
+    const json = JSON.parse(body)
+    return { email: json.email || '', salary: json.salary || '', content: json.content || '' }
+  } catch {
+    // ponytail: legacy markdown format — parse with regex
+    const boldLines = (body.match(/^\*\*.*?\*\*:\s*[^\n]+/gm) || [])
+    let email = '', salary = ''
+    for (const line of boldLines) {
+      const val = line.replace(/^\*\*.*?\*\*:\s*/, '').trim()
+      if (val.includes('@')) email = val
+      else salary = val
+    }
+    const content = body.replace(/^\*\*.*?\*\*:[^\n]*\n?/gm, '').replace(/^---\s*\n?/gm, '').trim()
+    return { email, salary, content }
+  }
+}
+
+function buildIssueBody({ email, salary, content, type, country, city, role }) {
+  return JSON.stringify({ email: email || '', salary: salary || '', content: content || '', type: type || '', country: country || '', city: city || '', role: role || '' })
+}
+
 function escapeHtml(str) {
   const div = document.createElement('div')
   div.textContent = str

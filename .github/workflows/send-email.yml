@@ -15,13 +15,11 @@ jobs:
         with:
           script: |
             const issue = context.payload.issue;
-            const body = issue.body || '';
-            const targetMatch = body.match(/\*\*Target Issue:\*\*\s*#(\d+)/);
-            const fromMatch = body.match(/\*\*From:\*\*\s*([^\n]+)/);
-            const msgMatch = body.match(/\*\*Target Issue:\*\*\s*#\d+\s*\n\n(.+)$/s);
-            const targetIssueNumber = targetMatch ? targetMatch[1] : null;
-            const fromName = fromMatch ? fromMatch[1].trim() : 'Unknown';
-            const message = msgMatch ? msgMatch[1].trim() : '';
+            let body;
+            try { body = JSON.parse(issue.body || '{}'); } catch { body = {}; }
+            const targetIssueNumber = body.targetIssue || null;
+            const fromName = body.from || 'Unknown';
+            const message = body.message || '';
 
             if (!targetIssueNumber) {
               console.log('No target issue found, skipping.');
@@ -33,8 +31,9 @@ jobs:
               repo: context.repo.repo,
               issue_number: parseInt(targetIssueNumber)
             });
-            const emailMatch = targetIssue.body.match(/\*\*.*?\*\*:\s*([^\n]+)/);
-            const targetEmail = emailMatch ? emailMatch[1].trim() : null;
+            let targetBody;
+            try { targetBody = JSON.parse(targetIssue.body || '{}'); } catch { targetBody = {}; }
+            const targetEmail = targetBody.email || null;
 
             if (!targetEmail) {
               console.log('No email found in target issue, skipping.');
