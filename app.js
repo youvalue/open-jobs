@@ -275,7 +275,7 @@ async function renderList(append = false) {
         <h1>${t('hero.title')}</h1>
         <p class="hero-sub">${t('hero.subtitle')}</p>
         <div class="hero-actions">
-          <a href="#/resumes" class="btn btn-primary btn-lg">${t('hero.explore')}</a>
+          <a href="javascript:void(0)" class="btn btn-primary btn-lg" onclick="document.querySelector('.issue-list')?.scrollIntoView({behavior:'smooth'})">${t('hero.explore')}</a>
           <a href="#/new?type=job" class="btn btn-lg">${t('hero.post')}</a>
         </div>
         <div class="hero-stats">
