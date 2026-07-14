@@ -489,9 +489,9 @@ async function editMyIssue(number) {
   const issue = await getIssue(number)
   const labels = issue.labels.map(l => l.name || l)
   const body = issue.body || ''
-  const emailMatch = body.match(/^\*\*.*?Email.*?\*\*:\s*([^\n]+)/m)
+  const emailMatch = body.match(/^\*\*.*?\*\*:\s*([^\n]+)/m)
   const existingEmail = emailMatch ? emailMatch[1].trim() : ''
-  const existingBody = emailMatch ? body.replace(/^\*\*.*?Email.*?\*\*:\s*[^\n]+\n\n---\n\n/, '') : body
+  const existingBody = emailMatch ? body.replace(/^\*\*.*?\*\*:\s*[^\n]+\n\n---\n\n/, '') : body
 
   const type = (labels.find(l => l.startsWith('type-')) || '').replace('type-', '') || 'resume'
   const country = (labels.find(l => l.startsWith('country-')) || '').replace('country-', '')
@@ -511,24 +511,13 @@ async function editMyIssue(number) {
     </div>
     <div class="form-group">
       <label>${t('post.country')}</label>
-      <select id="edit-country" onchange="onEditCountryChange()">
-        <option value="">${t('common.pleaseSelect')}</option>
-        ${countries.map(c => `<option value="${c}" ${c === country ? 'selected' : ''}>${t('country.' + c)}</option>`).join('')}
-      </select>
-    </div>
-    <div class="form-group">
-      <label>${t('post.city')}</label>
-      <select id="edit-city">
-        <option value="">${t('common.pleaseSelect')}</option>
-        ${citiesList.map(c => `<option value="${c}" ${c === city ? 'selected' : ''}>${t('city.' + c)}</option>`).join('')}
-      </select>
+      <input id="edit-country" value="${t('country.' + country)}" disabled style="background:var(--bg-secondary)">
+      <input id="edit-country-val" type="hidden" value="${country}">
     </div>
     <div class="form-group">
       <label>${t('post.role')}</label>
-      <select id="edit-role">
-        <option value="">${t('common.pleaseSelect')}</option>
-        ${roles.map(r => `<option value="${r}" ${r === role ? 'selected' : ''}>${t('role.' + r)}</option>`).join('')}
-      </select>
+      <input id="edit-role" value="${t('role.' + role)}" disabled style="background:var(--bg-secondary)">
+      <input id="edit-role-val" type="hidden" value="${role}">
     </div>
     <div class="form-group">
       <label>${t('post.titleLabel')}</label>
@@ -541,7 +530,7 @@ async function editMyIssue(number) {
     </div>
     <div class="form-group">
       <label>${t('post.email')}</label>
-      <input id="edit-email" value="${escapeHtml(existingEmail)}">
+      <input id="edit-email" type="email" value="${escapeHtml(existingEmail)}">
       <div class="form-hint" style="color:var(--danger)">${t('common.emailPublic')}</div>
     </div>
     <div class="form-actions">
@@ -551,26 +540,17 @@ async function editMyIssue(number) {
   `)
 }
 
-function onEditCountryChange() {
-  const country = qs('#edit-country').value
-  const citySelect = qs('#edit-city')
-  const citiesList = cities[country] || []
-  citySelect.innerHTML = `<option value="">${t('common.pleaseSelect')}</option>` + citiesList.map(c => `<option value="${c}">${t('city.' + c)}</option>`).join('')
-}
-
 async function saveEdit(number) {
   const title = qs('#edit-title').value.trim()
   const email = qs('#edit-email').value.trim()
   const body = qs('#edit-body').value.trim()
   const type = qs('#edit-type').value
-  const country = qs('#edit-country').value
-  const city = qs('#edit-city').value
-  const role = qs('#edit-role').value
+  const country = qs('#edit-country-val').value
+  const role = qs('#edit-role-val').value
   if (!title || !body) return
 
   const labels = [`type-${type}`, `status-open`]
   if (country) labels.push(`country-${country}`)
-  if (city) labels.push(`city-${city}`)
   if (role) labels.push(`role-${role}`)
 
   try {
@@ -641,7 +621,7 @@ async function renderDetail(number) {
             <button class="btn btn-primary" onclick="${isResume ? `showInviteForm(${number})` : `showApplyForm(${number})`}">${isResume ? t('detail.invite') : t('detail.apply')}</button>
           ` : ''}
         </div>
-        <div style="margin-top:16px"><a href="#/${state.type === 'job' ? 'jobs' : 'resumes'}" class="btn">← ${t('nav.resumes')}</a></div>
+        <div style="margin-top:16px"><a href="#/${isResume ? 'resumes' : 'jobs'}" class="btn">← ${isResume ? t('nav.resumes') : t('nav.jobs')}</a></div>
       </div>
     `
     showContent(html)
